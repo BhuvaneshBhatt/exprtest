@@ -78,7 +78,7 @@ supported Python versions before PyPI publication.
 
 ## Supported environments
 
-CI covers Python 3.9-3.14 on Linux, declared minimum SymPy/mpmath versions,
+CI covers Python 3.10-3.14 on Linux, declared minimum SymPy/mpmath versions,
 FLINT-enabled configurations, and targeted Windows/macOS smoke tests. Timeout
 support degrades safely where `SIGALRM` is unavailable or execution is outside
 the main thread.

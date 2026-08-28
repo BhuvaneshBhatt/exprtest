@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from math import gcd, lcm
-from typing import Callable, Optional
 
 import mpmath
 import sympy as sp
@@ -54,11 +54,9 @@ def _linear_parts(term: sp.Expr, budget: ExactBudget):
     return tuple(bases), target
 
 
-def pslq_zero_relation(
-    term: sp.Expr,
-    verifier: Callable[[sp.Expr], Optional[bool]],
-    budget: Optional[ExactBudget] = None,
-) -> Optional[PSLQRelation]:
+def pslq_zero_relation(term: sp.Expr,
+                       verifier: Callable[[sp.Expr], bool | None],
+                       budget: ExactBudget | None = None) -> PSLQRelation | None:
     """Find a candidate additive relation and require exact verification.
 
     PSLQ only selects a relation worth checking. The returned object exists
@@ -77,12 +75,8 @@ def pslq_zero_relation(
     try:
         mpmath.mp.dps = budget.pslq_digits
         vals = [mpmath.mpf(str(sp.N(base, budget.pslq_digits))) for base in bases]
-        rel = mpmath.pslq(
-            mpmath.matrix(vals),
-            tol=mpmath.mpf(10) ** (-(budget.pslq_digits - 15)),
-            maxcoeff=budget.pslq_coeff,
-            maxsteps=200,
-        )
+        rel = mpmath.pslq(mpmath.matrix(vals), tol=mpmath.mpf(10) ** (-(budget.pslq_digits - 15)),
+                          maxcoeff=budget.pslq_coeff, maxsteps=200)
     except EXACT_METHOD_ERRORS:
         return None
     finally:
@@ -92,9 +86,7 @@ def pslq_zero_relation(
     coeffs = _primitive([int(v) for v in rel])
     if coeffs != target:
         return None
-    candidate = sp.Add(
-        *(sp.Integer(c) * base for c, base in zip(coeffs, bases)), evaluate=False
-    )
+    candidate = sp.Add(*(sp.Integer(c) * base for c, base in zip(coeffs, bases)), evaluate=False)
     try:
         if verifier(candidate) is True:
             return PSLQRelation(bases, coeffs)

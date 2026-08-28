@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
 
 import sympy as sp
 
@@ -29,19 +28,19 @@ class NumberKind(Enum):
 class DomainFacts:
     """Cheap theorem/property facts used by membership and branch decisions."""
 
-    integer: Optional[bool] = None
-    rational: Optional[bool] = None
-    algebraic: Optional[bool] = None
-    real: Optional[bool] = None
-    complex: Optional[bool] = None
-    positive: Optional[bool] = None
-    negative: Optional[bool] = None
-    nonzero: Optional[bool] = None
-    finite: Optional[bool] = None
-    root_of_unity: Optional[bool] = None
+    integer: bool | None = None
+    rational: bool | None = None
+    algebraic: bool | None = None
+    real: bool | None = None
+    complex: bool | None = None
+    positive: bool | None = None
+    negative: bool | None = None
+    nonzero: bool | None = None
+    finite: bool | None = None
+    root_of_unity: bool | None = None
 
 
-def _ask(prop, assumptions) -> Optional[bool]:
+def _ask(prop, assumptions) -> bool | None:
     facts = assumption_facts(assumptions)
     try:
         if facts:
@@ -57,9 +56,7 @@ def _ask(prop, assumptions) -> Optional[bool]:
 def _alg_atom(term: sp.Expr) -> bool:
     if term.is_Rational or term in (sp.I, sp.GoldenRatio):
         return True
-    return bool(
-        isinstance(term, sp.AlgebraicNumber) or getattr(term, "is_CRootOf", False)
-    )
+    return bool(isinstance(term, sp.AlgebraicNumber) or getattr(term, "is_CRootOf", False))
 
 
 def _cheap_alg(term: sp.Expr, budget: ExactBudget) -> bool:
@@ -122,7 +119,8 @@ def _trans_atom(term: sp.Expr, budget: ExactBudget) -> bool:
     return False
 
 
-def _rat_parts(term: sp.Expr, atom: sp.Expr, var: sp.Symbol, budget: ExactBudget):
+def _rat_parts(term: sp.Expr, atom: sp.Expr, var: sp.Symbol,
+               budget: ExactBudget):
     """Build a rational function in one transcendental atom structurally."""
     if term == atom:
         return sp.Poly(var, var, domain=sp.QQ), sp.Poly(1, var, domain=sp.QQ)
@@ -140,10 +138,7 @@ def _rat_parts(term: sp.Expr, atom: sp.Expr, var: sp.Symbol, budget: ExactBudget
             pn, pd = part
             num = num * pd + pn * den
             den = den * pd
-            if (
-                len(num.terms()) > budget.max_poly_terms
-                or len(den.terms()) > budget.max_poly_terms
-            ):
+            if len(num.terms()) > budget.max_poly_terms or len(den.terms()) > budget.max_poly_terms:
                 return None
         return num, den
     if term.is_Mul:
@@ -156,10 +151,7 @@ def _rat_parts(term: sp.Expr, atom: sp.Expr, var: sp.Symbol, budget: ExactBudget
             pn, pd = part
             num *= pn
             den *= pd
-            if (
-                len(num.terms()) > budget.max_poly_terms
-                or len(den.terms()) > budget.max_poly_terms
-            ):
+            if len(num.terms()) > budget.max_poly_terms or len(den.terms()) > budget.max_poly_terms:
                 return None
         return num, den
     if term.is_Pow and term.exp.is_Integer:
@@ -173,13 +165,12 @@ def _rat_parts(term: sp.Expr, atom: sp.Expr, var: sp.Symbol, budget: ExactBudget
             power = -power
         if power.bit_length() > budget.max_pow_bits:
             return None
-        return num**power, den**power
+        return num ** power, den ** power
     return None
 
 
-def rational_transcendental_kind(
-    term: sp.Expr, budget: Optional[ExactBudget] = None
-) -> NumberKind:
+def rational_transcendental_kind(term: sp.Expr,
+                                  budget: ExactBudget | None = None) -> NumberKind:
     """Classify a rational function of one known transcendental constant.
 
     A nonzero polynomial with algebraic coefficients cannot vanish at a
@@ -228,7 +219,7 @@ def rational_transcendental_kind(
         return NumberKind.UNKNOWN
 
 
-def number_kind(term: sp.Expr, budget: Optional[ExactBudget] = None) -> NumberKind:
+def number_kind(term: sp.Expr, budget: ExactBudget | None = None) -> NumberKind:
     """Cheap sufficient algebraic/transcendental classifier."""
     budget = budget or ExactBudget()
     term = sp.sympify(term)
@@ -274,7 +265,7 @@ def number_kind(term: sp.Expr, budget: Optional[ExactBudget] = None) -> NumberKi
     return NumberKind.UNKNOWN
 
 
-def _root_unity(term: sp.Expr) -> Optional[bool]:
+def _root_unity(term: sp.Expr) -> bool | None:
     if term in (sp.Integer(1), sp.Integer(-1), sp.I, -sp.I):
         return True
     if term.func is sp.exp and len(term.args) == 1:
@@ -287,44 +278,19 @@ def _root_unity(term: sp.Expr) -> Optional[bool]:
     return None
 
 
-def domain_facts(
-    term: sp.Expr, assumptions=True, budget: Optional[ExactBudget] = None
-) -> DomainFacts:
+def domain_facts(term: sp.Expr, assumptions=True,
+                 budget: ExactBudget | None = None) -> DomainFacts:
     """Collect inexpensive exact domain/sign facts without simplification."""
     budget = budget or ExactBudget()
     assumptions = normalize_assumptions(assumptions)
     term = sp.sympify(term)
     kind = number_kind(term, budget) if not term.free_symbols else NumberKind.UNKNOWN
-    integer = (
-        bool(term.is_integer)
-        if term.is_integer is not None
-        else _ask(sp.Q.integer(term), assumptions)
-    )
-    rational = (
-        bool(term.is_rational)
-        if term.is_rational is not None
-        else _ask(sp.Q.rational(term), assumptions)
-    )
-    real = (
-        bool(term.is_real)
-        if term.is_real is not None
-        else _ask(sp.Q.real(term), assumptions)
-    )
-    complex_ = (
-        bool(term.is_complex)
-        if term.is_complex is not None
-        else _ask(sp.Q.complex(term), assumptions)
-    )
-    positive = (
-        bool(term.is_positive)
-        if term.is_positive is not None
-        else _ask(sp.Q.positive(term), assumptions)
-    )
-    negative = (
-        bool(term.is_negative)
-        if term.is_negative is not None
-        else _ask(sp.Q.negative(term), assumptions)
-    )
+    integer = bool(term.is_integer) if term.is_integer is not None else _ask(sp.Q.integer(term), assumptions)
+    rational = bool(term.is_rational) if term.is_rational is not None else _ask(sp.Q.rational(term), assumptions)
+    real = bool(term.is_real) if term.is_real is not None else _ask(sp.Q.real(term), assumptions)
+    complex_ = bool(term.is_complex) if term.is_complex is not None else _ask(sp.Q.complex(term), assumptions)
+    positive = bool(term.is_positive) if term.is_positive is not None else _ask(sp.Q.positive(term), assumptions)
+    negative = bool(term.is_negative) if term.is_negative is not None else _ask(sp.Q.negative(term), assumptions)
     if term.func in PROPERTY_FUNCS:
         if integer is None:
             integer = function_property(term, "integer", assumptions)
@@ -334,37 +300,20 @@ def domain_facts(
             positive = function_property(term, "positive", assumptions)
         if negative is None:
             negative = function_property(term, "negative", assumptions)
-    finite = (
-        bool(term.is_finite)
-        if term.is_finite is not None
-        else _ask(sp.Q.finite(term), assumptions)
-    )
+    finite = bool(term.is_finite) if term.is_finite is not None else _ask(sp.Q.finite(term), assumptions)
     zero = term.is_zero
     nonzero = (not bool(zero)) if zero is not None else None
     if nonzero is None and (positive is True or negative is True):
         nonzero = True
     if kind is NumberKind.TRANSCENDENTAL:
         nonzero = True
-    algebraic = (
-        True
-        if kind is NumberKind.ALGEBRAIC
-        else (False if kind is NumberKind.TRANSCENDENTAL else None)
-    )
-    return DomainFacts(
-        integer,
-        rational,
-        algebraic,
-        real,
-        complex_,
-        positive,
-        negative,
-        nonzero,
-        finite,
-        _root_unity(term),
-    )
+    algebraic = True if kind is NumberKind.ALGEBRAIC else (False if kind is NumberKind.TRANSCENDENTAL else None)
+    return DomainFacts(integer, rational, algebraic, real, complex_, positive,
+                       negative, nonzero, finite, _root_unity(term))
 
 
-def is_integer(term: sp.Expr, assumptions=True) -> Optional[bool]:
+
+def is_integer(term: sp.Expr, assumptions=True) -> bool | None:
     """Return whether *term* is provably an integer.
 
     The result is ``True`` or ``False`` when the inexpensive domain engine can
@@ -373,22 +322,22 @@ def is_integer(term: sp.Expr, assumptions=True) -> Optional[bool]:
     return domain_facts(term, assumptions).integer
 
 
-def is_rational(term: sp.Expr, assumptions=True) -> Optional[bool]:
+def is_rational(term: sp.Expr, assumptions=True) -> bool | None:
     """Return whether *term* is provably rational, or ``None`` if unknown."""
     return domain_facts(term, assumptions).rational
 
 
-def is_real(term: sp.Expr, assumptions=True) -> Optional[bool]:
+def is_real(term: sp.Expr, assumptions=True) -> bool | None:
     """Return whether *term* is provably real, or ``None`` if unknown."""
     return domain_facts(term, assumptions).real
 
 
-def is_algebraic(term: sp.Expr, assumptions=True) -> Optional[bool]:
+def is_algebraic(term: sp.Expr, assumptions=True) -> bool | None:
     """Return whether *term* is provably algebraic, or ``None`` if unknown."""
     return domain_facts(term, assumptions).algebraic
 
 
-def is_prime(term: sp.Expr, assumptions=True) -> Optional[bool]:
+def is_prime(term: sp.Expr, assumptions=True) -> bool | None:
     """Return whether *term* is provably a positive prime integer.
 
     Exact integer inputs use SymPy's deterministic integer primality test.
@@ -406,7 +355,7 @@ def is_prime(term: sp.Expr, assumptions=True) -> Optional[bool]:
     return ans
 
 
-def _direct_member(term: sp.Expr, set_, assumptions) -> Optional[bool]:
+def _direct_member(term: sp.Expr, set_, assumptions) -> bool | None:
     facts = domain_facts(term, assumptions)
     if set_ == sp.S.Integers:
         return facts.integer

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import Optional
 
 import sympy as sp
 
@@ -20,7 +19,7 @@ def _alg_coeff(term: sp.Expr) -> bool:
 
 
 @lru_cache(maxsize=cfg.EXACT_BOUND_CACHE_SIZE)
-def _algebraic_nonzero(term: sp.Expr) -> Optional[bool]:
+def _algebraic_nonzero(term: sp.Expr) -> bool | None:
     """Prove an algebraic exponent difference nonzero with a cheap-first path."""
     term = sp.sympify(term)
     if term.is_Rational:
@@ -39,10 +38,8 @@ def _algebraic_nonzero(term: sp.Expr) -> Optional[bool]:
     if ops > cfg.EXP_INDEP_GAP_MAX_OPS:
         return None
     result = run_with_time_budget(
-        algebraic_gap_test,
-        term,
-        seconds=cfg.EXP_INDEP_GAP_TIMEOUT,
-        default=None,
+        algebraic_gap_test, term,
+        seconds=cfg.EXP_INDEP_GAP_TIMEOUT, default=None,
     )
     if result is None:
         return None
@@ -68,9 +65,7 @@ def _exp_term(term: sp.Expr):
     if _alg_coeff(term):
         return term, sp.Integer(0)
     if term.is_Mul:
-        exp_parts = [
-            arg for arg in term.args if arg.func is sp.exp and len(arg.args) == 1
-        ]
+        exp_parts = [arg for arg in term.args if arg.func is sp.exp and len(arg.args) == 1]
         if len(exp_parts) == 1:
             exp_part = exp_parts[0]
             coeff = sp.Mul(*(arg for arg in term.args if arg is not exp_part))
@@ -78,7 +73,7 @@ def _exp_term(term: sp.Expr):
     return None
 
 
-def exponential_independence_nonzero(term: sp.Expr) -> Optional[bool]:
+def exponential_independence_nonzero(term: sp.Expr) -> bool | None:
     """Prove a small algebraic linear combination of exponentials nonzero.
 
     Lindemann--Weierstrass implies that exponentials of distinct algebraic
@@ -107,7 +102,7 @@ def exponential_independence_nonzero(term: sp.Expr) -> Optional[bool]:
         return None
     exponents = [exponent for _, exponent in pairs]
     for i, left in enumerate(exponents):
-        for right in exponents[i + 1 :]:
+        for right in exponents[i + 1:]:
             if left == right:
                 return None
             if _algebraic_nonzero(left - right) is not True:

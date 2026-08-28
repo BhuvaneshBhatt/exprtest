@@ -5,7 +5,6 @@ from __future__ import annotations
 import math
 import random
 from dataclasses import dataclass
-from typing import Optional
 
 try:
     import flint
@@ -118,9 +117,7 @@ def rational_function_bounds(expr: sp.Expr, symbols) -> RationalBounds:
     raise NotPolynomialRing(f"unsupported rational-function node {type(expr).__name__}")
 
 
-def _evaluate_tree_modulo_prime(
-    expr: sp.Expr, point: dict, ctx: flint.fmpz_mod_ctx, p: int
-):
+def _evaluate_tree_modulo_prime(expr: sp.Expr, point: dict, ctx: flint.fmpz_mod_ctx, p: int):
     if expr in point:
         return ctx(point[expr])
     if expr.is_Integer:
@@ -148,7 +145,7 @@ def _evaluate_tree_modulo_prime(
         power = int(exponent)
         if power < 0 and int(value) % p == 0:
             raise ZeroDivisionError("sample lies on a rational-function pole modulo p")
-        return value**power
+        return value ** power
     if expr.is_Symbol:
         raise NotPolynomialRing(f"unassigned symbol {expr}")
     raise NotPolynomialRing(f"unsupported node {type(expr).__name__}")
@@ -179,7 +176,7 @@ def finite_field_identity_test(
     expr: sp.Expr,
     symbols,
     target_error: float = cfg.SZ_TARGET_FALSE_POSITIVE,
-    rng: Optional[random.Random] = None,
+    rng: random.Random | None = None,
 ) -> ZeroClassification:
     """Test a rational-function identity without symbolic common denominators.
 
@@ -188,9 +185,7 @@ def finite_field_identity_test(
     which is enough to choose good primes and a Schwartz-Zippel error budget.
     """
     if flint is None:
-        return ZeroClassification(
-            Verdict.UNKNOWN, "finite-field", detail="python-flint is unavailable"
-        )
+        return ZeroClassification(Verdict.UNKNOWN, "finite-field", detail="python-flint is unavailable")
 
     rng = rng or random.Random()
     try:
@@ -212,9 +207,7 @@ def finite_field_identity_test(
         p = _prime_for_bits(field_bits, rng)
         ctx = flint.fmpz_mod_ctx(p)
         if p <= degree_den:
-            return ZeroClassification(
-                Verdict.UNKNOWN, "finite-field", detail="chosen field is too small"
-            )
+            return ZeroClassification(Verdict.UNKNOWN, "finite-field", detail="chosen field is too small")
 
         value = None
         point = None
@@ -226,9 +219,7 @@ def finite_field_identity_test(
             except ZeroDivisionError:
                 continue
             except NotPolynomialRing as exc:
-                return ZeroClassification(
-                    Verdict.UNKNOWN, "finite-field", detail=str(exc)
-                )
+                return ZeroClassification(Verdict.UNKNOWN, "finite-field", detail=str(exc))
         if value is None:
             return ZeroClassification(
                 Verdict.UNKNOWN,
@@ -242,10 +233,8 @@ def finite_field_identity_test(
                 Verdict.NONZERO_PROVEN,
                 "finite-field",
                 trials=trials,
-                detail=(
-                    f"expression is nonzero modulo a {p.bit_length()}-bit good prime at {point}; "
-                    "the prime exceeds the implicit numerator coefficient bound"
-                ),
+                detail=(f"expression is nonzero modulo a {p.bit_length()}-bit good prime at {point}; "
+                        "the prime exceeds the implicit numerator coefficient bound"),
                 evidence="certified-good-prime-witness",
             )
         per_trial = min(1.0, degree_num / (p - degree_den))
@@ -255,11 +244,9 @@ def finite_field_identity_test(
         Verdict.ZERO_UNPROVEN,
         "finite-field",
         trials=trials,
-        detail=(
-            f"expression vanished in {trials} independent pole-free samples over "
-            f"~{field_bits}-bit prime fields; implicit numerator degree bound {degree_num}, "
-            f"denominator degree bound {degree_den}"
-        ),
+        detail=(f"expression vanished in {trials} independent pole-free samples over "
+                f"~{field_bits}-bit prime fields; implicit numerator degree bound {degree_num}, "
+                f"denominator degree bound {degree_den}"),
         evidence="schwartz-zippel",
         error_bound=compounded,
         requested_error=target_error,

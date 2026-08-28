@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import MutableMapping
 from functools import lru_cache
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import sympy as sp
 
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
     from ._call_memo import OracleMemo
 
 
-def _ask_nonzero(term: sp.Expr, assumptions) -> Optional[bool]:
+def _ask_nonzero(term: sp.Expr, assumptions) -> bool | None:
     try:
         facts = assumption_facts(assumptions)
         if facts:
@@ -42,7 +42,7 @@ def _ask_nonzero(term: sp.Expr, assumptions) -> Optional[bool]:
         return None
 
 
-def _gamma_nonzero(term: sp.Expr) -> Optional[bool]:
+def _gamma_nonzero(term: sp.Expr) -> bool | None:
     if term.func is not sp.gamma or len(term.args) != 1:
         return None
     arg = term.args[0]
@@ -56,7 +56,7 @@ def _gamma_nonzero(term: sp.Expr) -> Optional[bool]:
 
 
 @lru_cache(maxsize=cfg.EXACT_NONZERO_CACHE_SIZE)
-def _closed_nonzero(term: sp.Expr) -> Optional[bool]:
+def _closed_nonzero(term: sp.Expr) -> bool | None:
     """Cached closed-expression portion of :func:`quick_nonzero`."""
     term = sp.sympify(term)
     features = expression_features(term)
@@ -99,11 +99,8 @@ def _closed_nonzero(term: sp.Expr) -> Optional[bool]:
         exp_nz = exponential_independence_nonzero(term)
         if exp_nz is True:
             return True
-    if (
-        not features.has_float
-        and not features.has_nonfinite
-        and features.nodes <= cfg.QUICK_KIND_MAX_NODES
-    ):
+    if (not features.has_float and not features.has_nonfinite
+            and features.nodes <= cfg.QUICK_KIND_MAX_NODES):
         kind = number_kind(term)
         if kind is NumberKind.TRANSCENDENTAL:
             return True
@@ -113,10 +110,10 @@ def _closed_nonzero(term: sp.Expr) -> Optional[bool]:
 def quick_nonzero(
     term: sp.Expr,
     assumptions=True,
-    memo: Optional[MutableMapping] = None,
+    memo: MutableMapping | None = None,
     *,
-    context: Optional[OracleMemo] = None,
-) -> Optional[bool]:
+    context: OracleMemo | None = None,
+) -> bool | None:
     """Return a proof that ``term != 0`` when one is structurally cheap.
 
     ``True`` means nonzero is proved, ``False`` means zero is proved, and
@@ -151,9 +148,7 @@ def quick_nonzero(
     gamma = _gamma_nonzero(term)
     if gamma is not None:
         return gamma
-    fact_nonzero = (
-        function_nonzero(term, assumptions) if term.func in PROPERTY_FUNCS else None
-    )
+    fact_nonzero = function_nonzero(term, assumptions) if term.func in PROPERTY_FUNCS else None
     if fact_nonzero is True and quick_defined(term, assumptions) is True:
         if cache is not None:
             cache[key] = True
@@ -170,9 +165,7 @@ def quick_nonzero(
                 cache[key] = True
             return True
     if term.is_Mul:
-        values = tuple(
-            quick_nonzero(arg, assumptions, memo, context=context) for arg in term.args
-        )
+        values = tuple(quick_nonzero(arg, assumptions, memo, context=context) for arg in term.args)
         if all(value is True for value in values):
             return True
         if any(value is False for value in values):
@@ -190,19 +183,12 @@ def quick_nonzero(
             if cache is not None:
                 cache[key] = result
             return result
-        if (
-            exponent.is_negative is True
-            and quick_defined_nonzero(base, assumptions, context=context) is True
-        ):
+        if exponent.is_negative is True and quick_defined_nonzero(base, assumptions, context=context) is True:
             if cache is not None:
                 cache[key] = True
             return True
-    if (
-        not term.free_symbols
-        and term.is_Add
-        and features.has_exp
-        and not exp_indep_inapplicable(term)
-    ):
+    if (not term.free_symbols and term.is_Add and features.has_exp
+            and not exp_indep_inapplicable(term)):
         exp_nz = exponential_independence_nonzero(term)
         if exp_nz is True:
             if cache is not None:

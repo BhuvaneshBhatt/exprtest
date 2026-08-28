@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import MutableMapping
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import sympy as sp
 
@@ -18,7 +18,7 @@ def _memo_key(term: sp.Expr, assumptions) -> tuple:
     return (sp.sympify(term), assumptions)
 
 
-def quick_defined(term: sp.Expr, assumptions=True) -> Optional[bool]:
+def quick_defined(term: sp.Expr, assumptions=True) -> bool | None:
     """Return whether ``term`` is defined and finite when cheaply decidable."""
     term = sp.sympify(term)
     assumptions = normalize_assumptions(assumptions)
@@ -83,12 +83,7 @@ def quick_defined(term: sp.Expr, assumptions=True) -> Optional[bool]:
 def _square_nonnegative(term: sp.Expr, assumptions, memo, context) -> tuple[bool, bool]:
     if term.is_Rational:
         return term >= 0, term > 0
-    if (
-        term.is_Pow
-        and term.exp.is_Integer
-        and term.exp.is_even is True
-        and term.exp.is_positive is True
-    ):
+    if term.is_Pow and term.exp.is_Integer and term.exp.is_even is True and term.exp.is_positive is True:
         base = term.base
         if base.is_real is True:
             nz = quick_defined_nonzero(base, assumptions, memo, context=context)
@@ -101,13 +96,8 @@ def _square_nonnegative(term: sp.Expr, assumptions, memo, context) -> tuple[bool
     return False, False
 
 
-def quick_defined_nonzero(
-    term: sp.Expr,
-    assumptions=True,
-    memo: Optional[MutableMapping] = None,
-    *,
-    context: Optional[OracleMemo] = None,
-) -> Optional[bool]:
+def quick_defined_nonzero(term: sp.Expr, assumptions=True, memo: MutableMapping | None = None,
+                          *, context: OracleMemo | None = None) -> bool | None:
     """Return True only when finiteness and nonvanishing are cheaply proved."""
     term = sp.sympify(term)
     assumptions = normalize_assumptions(assumptions)
@@ -127,24 +117,16 @@ def quick_defined_nonzero(
         if result is None and term.func is sp.exp and defined is True:
             result = True
         elif result is None and term.is_Mul:
-            vals = [
-                quick_defined_nonzero(a, assumptions, memo, context=context)
-                for a in term.args
-            ]
+            vals = [quick_defined_nonzero(a, assumptions, memo, context=context) for a in term.args]
             if vals and all(v is True for v in vals):
                 result = True
         elif result is None and term.is_Add:
-            pieces = [
-                _square_nonnegative(a, assumptions, memo, context) for a in term.args
-            ]
+            pieces = [_square_nonnegative(a, assumptions, memo, context) for a in term.args]
             if pieces and all(nn for nn, _ in pieces) and any(pos for _, pos in pieces):
                 result = True
         elif result is None and term.is_Pow:
             base, exp = term.args
-            if (
-                quick_defined_nonzero(base, assumptions, memo, context=context) is True
-                and exp.is_finite is not False
-            ):
+            if quick_defined_nonzero(base, assumptions, memo, context=context) is True and exp.is_finite is not False:
                 result = True
     if cache is not None:
         cache[key] = result

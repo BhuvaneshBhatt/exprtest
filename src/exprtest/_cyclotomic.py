@@ -5,7 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from functools import lru_cache
 from math import gcd
-from typing import Optional
 
 import sympy as sp
 from sympy.polys.numberfields import to_number_field
@@ -40,14 +39,14 @@ def _lcm(a: int, b: int) -> int:
     return abs(a * b) // gcd(a, b) if a and b else 0
 
 
-def _pi_ratio(arg: sp.Expr) -> Optional[sp.Rational]:
+def _pi_ratio(arg: sp.Expr) -> sp.Rational | None:
     coeff = arg.coeff(sp.pi)
     if arg == coeff * sp.pi and coeff.is_Rational:
         return sp.Rational(coeff)
     return None
 
 
-def _root_ratio(arg: sp.Expr) -> Optional[sp.Rational]:
+def _root_ratio(arg: sp.Expr) -> sp.Rational | None:
     coeff = arg.coeff(sp.pi)
     if arg != coeff * sp.pi:
         return None
@@ -55,7 +54,7 @@ def _root_ratio(arg: sp.Expr) -> Optional[sp.Rational]:
     return sp.Rational(ratio) if ratio.is_Rational else None
 
 
-def _needed_order(term: sp.Expr) -> Optional[int]:
+def _needed_order(term: sp.Expr) -> int | None:
     """Return a common root-of-unity order, or ``None`` if unsupported."""
     order = 4
     for node in sp.preorder_traversal(term):
@@ -78,7 +77,7 @@ def _reduce(value: sp.Expr, var: sp.Symbol, mod: sp.Poly) -> sp.Expr:
     return sp.Poly(value, var, domain=sp.QQ).rem(mod).as_expr()
 
 
-def _inverse(value: sp.Expr, var: sp.Symbol, mod: sp.Poly) -> Optional[sp.Expr]:
+def _inverse(value: sp.Expr, var: sp.Symbol, mod: sp.Poly) -> sp.Expr | None:
     try:
         inv = sp.invert(sp.Poly(value, var, domain=sp.QQ), mod)
         return _reduce(inv.as_expr(), var, mod)
@@ -86,9 +85,7 @@ def _inverse(value: sp.Expr, var: sp.Symbol, mod: sp.Poly) -> Optional[sp.Expr]:
         return None
 
 
-def _power(
-    value: sp.Expr, power: int, var: sp.Symbol, mod: sp.Poly
-) -> Optional[sp.Expr]:
+def _power(value: sp.Expr, power: int, var: sp.Symbol, mod: sp.Poly) -> sp.Expr | None:
     if power < 0:
         value = _inverse(value, var, mod)
         if value is None:
@@ -109,9 +106,7 @@ def _root_power(k: int, order: int, var: sp.Symbol, mod: sp.Poly) -> sp.Expr:
     return _power(var, k % order, var, mod) or sp.Integer(0)
 
 
-def _trig_value(
-    term: sp.Expr, order: int, var: sp.Symbol, mod: sp.Poly
-) -> Optional[sp.Expr]:
+def _trig_value(term: sp.Expr, order: int, var: sp.Symbol, mod: sp.Poly) -> sp.Expr | None:
     ratio = _pi_ratio(term.args[0])
     if ratio is None:
         return None
@@ -137,7 +132,7 @@ def _trig_value(
     return None
 
 
-def _eval(term: sp.Expr, order: int, var: sp.Symbol, mod: sp.Poly) -> Optional[sp.Expr]:
+def _eval(term: sp.Expr, order: int, var: sp.Symbol, mod: sp.Poly) -> sp.Expr | None:
     if term.is_Rational:
         return term
     if term == sp.I:
@@ -177,7 +172,7 @@ def _eval(term: sp.Expr, order: int, var: sp.Symbol, mod: sp.Poly) -> Optional[s
 
 
 @lru_cache(maxsize=1024)
-def _form_cached(term: sp.Expr, limit: int) -> Optional[CyclotomicForm]:
+def _form_cached(term: sp.Expr, limit: int) -> CyclotomicForm | None:
     order = _needed_order(term)
     if order is None or order > limit:
         return None
@@ -194,19 +189,13 @@ def _form_cached(term: sp.Expr, limit: int) -> Optional[CyclotomicForm]:
         return None
 
 
-def cyclotomic_form(
-    term: sp.Expr, order_limit: Optional[int] = None
-) -> Optional[CyclotomicForm]:
+def cyclotomic_form(term: sp.Expr, order_limit: int | None = None) -> CyclotomicForm | None:
     """Represent a supported exact constant in a cyclotomic quotient field."""
     budget = ExactBudget()
     term = sp.sympify(term)
     if not stage_allowed(term, "cyclotomic", budget):
         return None
-    limit = (
-        min(cfg.CYCLOTOMIC_MAX_ORDER, budget.max_cyclo)
-        if order_limit is None
-        else min(int(order_limit), budget.max_cyclo)
-    )
+    limit = min(cfg.CYCLOTOMIC_MAX_ORDER, budget.max_cyclo) if order_limit is None else min(int(order_limit), budget.max_cyclo)
     return _form_cached(term, limit)
 
 
@@ -214,11 +203,7 @@ def cyclotomic_zero_test(term: sp.Expr) -> ZeroClassification:
     """Prove zero or nonzero directly in a cyclotomic quotient when possible."""
     form = cyclotomic_form(term)
     if form is None:
-        return ZeroClassification(
-            Verdict.UNKNOWN,
-            "cyclotomic",
-            detail="expression is outside the cyclotomic subset",
-        )
+        return ZeroClassification(Verdict.UNKNOWN, "cyclotomic", detail="expression is outside the cyclotomic subset")
     if form.is_zero:
         return ZeroClassification(
             Verdict.ZERO_PROVEN,
@@ -234,7 +219,7 @@ def cyclotomic_zero_test(term: sp.Expr) -> ZeroClassification:
     )
 
 
-def cyclotomic_sign(term: sp.Expr) -> Optional[int]:
+def cyclotomic_sign(term: sp.Expr) -> int | None:
     """Return the exact sign of a supported real cyclotomic constant."""
     term = sp.sympify(term)
     if term.is_real is not True:
@@ -246,11 +231,7 @@ def cyclotomic_sign(term: sp.Expr) -> Optional[int]:
         return 0
     try:
         value = to_number_field(form.as_expr())
-        exact = (
-            value.to_root(radicals=False)
-            if isinstance(value, sp.AlgebraicNumber)
-            else value
-        )
+        exact = value.to_root(radicals=False) if isinstance(value, sp.AlgebraicNumber) else value
         pos = sp.ask(sp.Q.positive(exact))
         if pos is True:
             return 1

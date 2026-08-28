@@ -6,7 +6,6 @@ import signal
 import threading
 import time
 from contextlib import contextmanager
-from typing import Optional
 
 
 class TimeoutError_(BaseException):
@@ -24,7 +23,7 @@ def _alarm_available() -> bool:
 
 
 @contextmanager
-def bounded_time_context(seconds: Optional[float]):
+def bounded_time_context(seconds: float | None):
     """Bound a block with SIGALRM when the platform/thread supports it.
 
     On platforms without ``SIGALRM`` (notably Windows), and in non-main

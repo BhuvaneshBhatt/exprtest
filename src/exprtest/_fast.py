@@ -3,14 +3,13 @@
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import Optional
 
 import sympy as sp
 
 from ._cost import within_budget
 
 
-def literal_number_zero(term: sp.Expr) -> Optional[bool]:
+def literal_number_zero(term: sp.Expr) -> bool | None:
     """Classify finite numeric literals by their represented value.
 
     Exact SymPy numbers and finite ``Float`` literals are safe to classify

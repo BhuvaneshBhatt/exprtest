@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import random
-from typing import Optional
 
 import sympy as sp
 
@@ -49,7 +48,7 @@ def _fast_unknown(detail: str) -> ZeroClassification:
     return ZeroClassification(Verdict.UNKNOWN, "fast-oracle", detail=detail)
 
 
-def _verify_pslq(term: sp.Expr, assumptions) -> Optional[bool]:
+def _verify_pslq(term: sp.Expr, assumptions) -> bool | None:
     """Verify a PSLQ candidate using only independent exact proof stages."""
     term = quick_reduce(sp.sympify(term))
     if term == 0 or term.is_zero is True:
@@ -64,18 +63,12 @@ def _verify_pslq(term: sp.Expr, assumptions) -> Optional[bool]:
     if cyclo.verdict is Verdict.ZERO_PROVEN:
         return True
     exact_term = trig_normal_form(normalized)
-    alg = run_with_time_budget(
-        exact_algebraic_number_test,
-        exact_term,
-        seconds=cfg.EXACT_STAGE_TIMEOUT,
-        default=None,
-    )
+    alg = run_with_time_budget(exact_algebraic_number_test, exact_term,
+                               seconds=cfg.EXACT_STAGE_TIMEOUT, default=None)
     return True if alg is not None and alg.verdict is Verdict.ZERO_PROVEN else None
 
 
-def _cheap_zero_property(
-    term: sp.Expr, features: Optional[ExprFeatures] = None
-) -> Optional[bool]:
+def _cheap_zero_property(term: sp.Expr, features: ExprFeatures | None = None) -> bool | None:
     """Use SymPy's zero property only on structurally tiny expressions."""
     features = features or expression_features(term)
     if features.has_float or features.has_nonfinite:
@@ -90,7 +83,7 @@ def _cheap_zero_property(
     return bool(value)
 
 
-def _stage_run(profiler: Optional[StageProfiler], stage: str, func, outcome=None):
+def _stage_run(profiler: StageProfiler | None, stage: str, func, outcome=None):
     if profiler is None:
         return func()
     return profiler.run(stage, func, outcome)
@@ -100,34 +93,27 @@ def _verdict_name(result: ZeroClassification) -> str:
     return result.verdict.name.lower()
 
 
-def _fast_exact(
-    term: sp.Expr,
-    assumptions,
-    profiler: Optional[StageProfiler] = None,
-    memo: Optional[OracleMemo] = None,
-) -> ZeroClassification:
+def _fast_exact(term: sp.Expr, assumptions,
+                profiler: StageProfiler | None = None,
+                memo: OracleMemo | None = None) -> ZeroClassification:
     """Classify a closed exact expression without generic simplification."""
     term = _stage_run(profiler, "quick-reduce", lambda: quick_reduce(term))
     literal_zero = literal_number_zero(term)
     if literal_zero is not None:
         return ZeroClassification(
             Verdict.ZERO_PROVEN if literal_zero else Verdict.NONZERO_PROVEN,
-            "quick-arithmetic",
-            detail="local exact arithmetic decided the expression",
+            "quick-arithmetic", detail="local exact arithmetic decided the expression",
             evidence="exact-arithmetic",
         )
     features = _stage_run(profiler, "features", lambda: expression_features(term))
     if features.has_domain_hazard and quick_defined(term, assumptions) is False:
         return ZeroClassification(
-            Verdict.UNKNOWN,
-            "definedness",
+            Verdict.UNKNOWN, "definedness",
             detail="expression is undefined or has a pole under the supplied assumptions",
             evidence="undefined-expression",
         )
     identity = _stage_run(
-        profiler,
-        "elementary-identity",
-        lambda: elementary_identity_normal_form(term, assumptions),
+        profiler, "elementary-identity", lambda: elementary_identity_normal_form(term, assumptions)
     )
     if identity != term:
         term = quick_reduce(identity)
@@ -139,9 +125,7 @@ def _fast_exact(
                 detail="bounded exact polynomial/rational or elementary identity normalization decided the expression",
                 evidence="exact-identity",
             )
-        features = _stage_run(
-            profiler, "features-identity", lambda: expression_features(term)
-        )
+        features = _stage_run(profiler, "features-identity", lambda: expression_features(term))
     if memo is None and features.nodes >= cfg.CALL_MEMO_MIN_NODES:
         memo = OracleMemo()
         memo.feature_cache = {term: features}
@@ -153,35 +137,22 @@ def _fast_exact(
             if literal_zero is not None:
                 return ZeroClassification(
                     Verdict.ZERO_PROVEN if literal_zero else Verdict.NONZERO_PROVEN,
-                    "exact-rewrite",
-                    detail="exact local rewrite produced a finite exact number",
+                    "exact-rewrite", detail="exact local rewrite produced a finite exact number",
                     evidence="exact-rewrite",
                 )
             features = _stage_run(
-                profiler,
-                "features-rewrite",
-                lambda: (
-                    memo.features(term)
-                    if memo is not None
-                    else expression_features(term)
-                ),
+                profiler, "features-rewrite",
+                lambda: memo.features(term) if memo is not None else expression_features(term),
             )
     elif profiler is not None:
         profiler.note("exact-rewrite", "skipped", "structurally inapplicable")
     if not special_inapplicable(term):
-        special = _stage_run(
-            profiler, "special-values", lambda: special_normal_form(term)
-        )
+        special = _stage_run(profiler, "special-values", lambda: special_normal_form(term))
         if special != term:
             term = special
             features = _stage_run(
-                profiler,
-                "features-special",
-                lambda: (
-                    memo.features(term)
-                    if memo is not None
-                    else expression_features(term)
-                ),
+                profiler, "features-special",
+                lambda: memo.features(term) if memo is not None else expression_features(term),
             )
     elif profiler is not None:
         profiler.note("special-values", "skipped", "structurally inapplicable")
@@ -189,128 +160,74 @@ def _fast_exact(
     if literal_zero is not None:
         return ZeroClassification(
             Verdict.ZERO_PROVEN if literal_zero else Verdict.NONZERO_PROVEN,
-            "quick-arithmetic",
-            detail="local exact arithmetic decided the expression",
+            "quick-arithmetic", detail="local exact arithmetic decided the expression",
             evidence="exact-arithmetic",
         )
     if not within_budget(term, features=features):
         return _fast_unknown("exact-expression budget exceeded")
-    nonzero = _stage_run(
-        profiler,
-        "quick-nonzero",
-        lambda: (
-            memo.nonzero(term, assumptions)
-            if memo is not None
-            else quick_nonzero(term, assumptions)
-        ),
-        lambda value: (
-            "nonzero" if value is True else "zero" if value is False else "unknown"
-        ),
-    )
+    nonzero = _stage_run(profiler, "quick-nonzero", lambda: (memo.nonzero(term, assumptions) if memo is not None else quick_nonzero(term, assumptions)),
+                         lambda value: "nonzero" if value is True else "zero" if value is False else "unknown")
     if nonzero is True:
-        return ZeroClassification(
-            Verdict.NONZERO_PROVEN,
-            "quick-nonzero",
-            detail="a cheap structural theorem proves the exact value is nonzero",
-            evidence="structural-nonzero",
-        )
+        return ZeroClassification(Verdict.NONZERO_PROVEN, "quick-nonzero",
+                                  detail="a cheap structural theorem proves the exact value is nonzero",
+                                  evidence="structural-nonzero")
     if nonzero is False:
-        return ZeroClassification(
-            Verdict.ZERO_PROVEN,
-            "quick-nonzero",
-            detail="a cheap structural theorem proves the exact value is zero",
-            evidence="structural-zero",
-        )
-    zero_prop = _stage_run(
-        profiler, "zero-property", lambda: _cheap_zero_property(term, features)
-    )
+        return ZeroClassification(Verdict.ZERO_PROVEN, "quick-nonzero",
+                                  detail="a cheap structural theorem proves the exact value is zero",
+                                  evidence="structural-zero")
+    zero_prop = _stage_run(profiler, "zero-property",
+                           lambda: _cheap_zero_property(term, features))
     if zero_prop is True:
-        return ZeroClassification(
-            Verdict.ZERO_PROVEN,
-            "zero-property",
-            detail="cheap SymPy exact zero property is true",
-            evidence="exact-property",
-        )
+        return ZeroClassification(Verdict.ZERO_PROVEN, "zero-property",
+                                  detail="cheap SymPy exact zero property is true", evidence="exact-property")
     if zero_prop is False:
-        return ZeroClassification(
-            Verdict.NONZERO_PROVEN,
-            "zero-property",
-            detail="cheap SymPy exact zero property is false",
-            evidence="exact-property",
-        )
-    kind = _stage_run(
-        profiler,
-        "number-kind",
-        lambda: memo.kind(term) if memo is not None else number_kind(term),
-        lambda value: value.value,
-    )
+        return ZeroClassification(Verdict.NONZERO_PROVEN, "zero-property",
+                                  detail="cheap SymPy exact zero property is false", evidence="exact-property")
+    kind = _stage_run(profiler, "number-kind", lambda: (memo.kind(term) if memo is not None else number_kind(term)),
+                      lambda value: value.value)
     if kind is NumberKind.TRANSCENDENTAL:
-        return ZeroClassification(
-            Verdict.NONZERO_PROVEN,
-            "number-kind",
-            detail="a cheap transcendence theorem proves the exact constant is nonzero",
-            evidence="proven-transcendental",
-        )
+        return ZeroClassification(Verdict.NONZERO_PROVEN, "number-kind",
+                                  detail="a cheap transcendence theorem proves the exact constant is nonzero",
+                                  evidence="proven-transcendental")
     if not features.has_log_exp or log_inapplicable(term):
         trans = _fast_unknown("no transcendental structural rule applies")
         if profiler is not None:
             profiler.note("transcendental", "skipped", "no log/exp structure")
     else:
-        trans = _stage_run(
-            profiler,
-            "transcendental",
-            lambda: transcendental_zero_test(term, assumptions),
-            _verdict_name,
-        )
+        trans = _stage_run(profiler, "transcendental",
+                           lambda: transcendental_zero_test(term, assumptions), _verdict_name)
     if trans.verdict is not Verdict.UNKNOWN:
         return trans
     normalized = term
     if features.has_log_exp and not log_inapplicable(term):
-        normalized = _stage_run(
-            profiler,
-            "exp-log-normalize",
-            lambda: exp_log_normal_form(term, assumptions),
-        )
+        normalized = _stage_run(profiler, "exp-log-normalize",
+                                lambda: exp_log_normal_form(term, assumptions))
     elif profiler is not None:
         profiler.note("exp-log-normalize", "skipped", "structurally inapplicable")
     if normalized != term:
         term = quick_reduce(normalized)
         features = _stage_run(
-            profiler,
-            "features-normalized",
-            lambda: (
-                memo.features(term) if memo is not None else expression_features(term)
-            ),
+            profiler, "features-normalized",
+            lambda: memo.features(term) if memo is not None else expression_features(term),
         )
         literal_zero = literal_number_zero(term)
         if literal_zero is not None:
-            return ZeroClassification(
-                Verdict.ZERO_PROVEN if literal_zero else Verdict.NONZERO_PROVEN,
-                "exp-log-normalize",
-                detail="branch-safe exp/log normalization produced a finite exact number",
-                evidence="exact-exp-log-identity",
-            )
-        kind = _stage_run(
-            profiler,
-            "number-kind-normalized",
-            lambda: memo.kind(term) if memo is not None else number_kind(term),
-            lambda value: value.value,
-        )
+            return ZeroClassification(Verdict.ZERO_PROVEN if literal_zero else Verdict.NONZERO_PROVEN,
+                                      "exp-log-normalize",
+                                      detail="branch-safe exp/log normalization produced a finite exact number",
+                                      evidence="exact-exp-log-identity")
+        kind = _stage_run(profiler, "number-kind-normalized", lambda: (memo.kind(term) if memo is not None else number_kind(term)),
+                          lambda value: value.value)
         if kind is NumberKind.TRANSCENDENTAL:
-            return ZeroClassification(
-                Verdict.NONZERO_PROVEN,
-                "number-kind",
-                detail="normalization exposed a provably transcendental exact constant",
-                evidence="proven-transcendental",
-            )
+            return ZeroClassification(Verdict.NONZERO_PROVEN, "number-kind",
+                                      detail="normalization exposed a provably transcendental exact constant",
+                                      evidence="proven-transcendental")
     if not features.has_cyclotomic_shape or cyclotomic_inapplicable(term):
         cyclo = _fast_unknown("cyclotomic stage structurally inapplicable")
         if profiler is not None:
             profiler.note("cyclotomic", "skipped", "structurally inapplicable")
     else:
-        cyclo = _stage_run(
-            profiler, "cyclotomic", lambda: cyclotomic_zero_test(term), _verdict_name
-        )
+        cyclo = _stage_run(profiler, "cyclotomic", lambda: cyclotomic_zero_test(term), _verdict_name)
     if cyclo.verdict is not Verdict.UNKNOWN:
         return cyclo
 
@@ -319,27 +236,21 @@ def _fast_exact(
         if profiler is not None:
             profiler.note("sqrt-sum", "skipped", "structurally inapplicable")
     else:
-        sqrt_sum = _stage_run(
-            profiler, "sqrt-sum", lambda: square_root_sum_test(term), _verdict_name
-        )
+        sqrt_sum = _stage_run(profiler, "sqrt-sum", lambda: square_root_sum_test(term), _verdict_name)
     if sqrt_sum.verdict is not Verdict.UNKNOWN:
         return sqrt_sum
 
     # The tower stage is cheaper than primitive-element construction for small
     # nested radicals. It is admitted only under a stricter fast-path budget.
-    if (not features.has_tower_shape and not term.has(sp.I)) or tower_inapplicable(
-        term
-    ):
+    if (not features.has_tower_shape and not term.has(sp.I)) or tower_inapplicable(term):
         tower = _fast_unknown("tower stage structurally inapplicable")
         if profiler is not None:
             profiler.note("algebraic-tower", "skipped", "structurally inapplicable")
     else:
         tower = _stage_run(
-            profiler,
-            "algebraic-tower",
+            profiler, "algebraic-tower",
             lambda: run_with_time_budget(
-                tower_algebraic_test,
-                term,
+                tower_algebraic_test, term,
                 seconds=cfg.TOWER_SIGN_TIMEOUT,
                 default=_fast_unknown("tower stage timed out"),
             ),
@@ -350,14 +261,9 @@ def _fast_exact(
 
     exact_term = _stage_run(profiler, "exact-trig", lambda: trig_normal_form(term))
     alg = _stage_run(
-        profiler,
-        "exact-algebraic",
-        lambda: run_with_time_budget(
-            exact_algebraic_number_test,
-            exact_term,
-            seconds=cfg.EXACT_STAGE_TIMEOUT,
-            default=None,
-        ),
+        profiler, "exact-algebraic",
+        lambda: run_with_time_budget(exact_algebraic_number_test, exact_term,
+                                     seconds=cfg.EXACT_STAGE_TIMEOUT, default=None),
         lambda value: "timeout" if value is None else _verdict_name(value),
     )
     if alg is not None and alg.verdict is not Verdict.UNKNOWN:
@@ -368,66 +274,41 @@ def _fast_exact(
             profiler.note("pslq", "skipped", "structurally inapplicable")
     else:
         relation = _stage_run(
-            profiler,
-            "pslq",
-            lambda: pslq_zero_relation(
-                term,
-                lambda candidate: _verify_pslq(candidate, assumptions),
-                ExactBudget(),
-            ),
+            profiler, "pslq",
+            lambda: pslq_zero_relation(term, lambda candidate: _verify_pslq(candidate, assumptions), ExactBudget()),
             lambda value: "verified" if value is not None else "no-relation",
         )
     if relation is not None:
-        return ZeroClassification(
-            Verdict.ZERO_PROVEN,
-            "pslq-verified",
-            detail="PSLQ proposed the target relation and independent exact verification proved it",
-            evidence="pslq-candidate-exact-verification",
-        )
-    numerical = _stage_run(
-        profiler, "arb", lambda: adaptive_precision_ball_test(term), _verdict_name
-    )
+        return ZeroClassification(Verdict.ZERO_PROVEN, "pslq-verified",
+                                  detail="PSLQ proposed the target relation and independent exact verification proved it",
+                                  evidence="pslq-candidate-exact-verification")
+    numerical = _stage_run(profiler, "arb", lambda: adaptive_precision_ball_test(term), _verdict_name)
     if numerical.verdict is not Verdict.UNKNOWN:
         return numerical
     return _fast_unknown("bounded exact and rigorous numeric stages were inconclusive")
 
-
-def _fast_classify_uncached(
-    term: sp.Expr,
-    assumptions,
-    rng: random.Random,
-    profiler: Optional[StageProfiler] = None,
-    memo: Optional[OracleMemo] = None,
-) -> ZeroClassification:
+def _fast_classify_uncached(term: sp.Expr, assumptions, rng: random.Random,
+                            profiler: StageProfiler | None = None,
+                            memo: OracleMemo | None = None) -> ZeroClassification:
     """Run the uncached bounded oracle after input normalization."""
     if assumptions is sp.false:
-        return ZeroClassification(
-            Verdict.UNKNOWN,
-            "assumptions",
-            detail="assumptions are inconsistent, so the requested domain is empty",
-            evidence="empty-domain",
-        )
+        return ZeroClassification(Verdict.UNKNOWN, "assumptions",
+                                  detail="assumptions are inconsistent, so the requested domain is empty",
+                                  evidence="empty-domain")
     refined = refine_with_assumptions(term, assumptions)
     if refined != term:
         term = refined
     literal_zero = literal_number_zero(term)
     if literal_zero is not None:
-        return ZeroClassification(
-            Verdict.ZERO_PROVEN if literal_zero else Verdict.NONZERO_PROVEN,
-            "literal",
-            detail="expression is a finite exact SymPy number",
-            evidence="exact-arithmetic",
-        )
+        return ZeroClassification(Verdict.ZERO_PROVEN if literal_zero else Verdict.NONZERO_PROVEN,
+                                  "literal", detail="expression is a finite exact SymPy number",
+                                  evidence="exact-arithmetic")
     has_free = bool(term.free_symbols)
     if has_free:
         free_features = expression_features(term)
-        if (
-            free_features.has_domain_hazard
-            and quick_defined(term, assumptions) is False
-        ):
+        if free_features.has_domain_hazard and quick_defined(term, assumptions) is False:
             return ZeroClassification(
-                Verdict.UNKNOWN,
-                "definedness",
+                Verdict.UNKNOWN, "definedness",
                 detail="expression is undefined or has a pole under the supplied assumptions",
                 evidence="undefined-expression",
             )
@@ -437,27 +318,17 @@ def _fast_classify_uncached(
                 term = rewritten
                 literal_zero = literal_number_zero(term)
                 if literal_zero is not None:
-                    return ZeroClassification(
-                        Verdict.ZERO_PROVEN if literal_zero else Verdict.NONZERO_PROVEN,
-                        "exact-rewrite",
-                        detail="exact local rewrite produced a finite exact number",
-                        evidence="exact-rewrite",
-                    )
+                    return ZeroClassification(Verdict.ZERO_PROVEN if literal_zero else Verdict.NONZERO_PROVEN,
+                                              "exact-rewrite", detail="exact local rewrite produced a finite exact number",
+                                              evidence="exact-rewrite")
                 has_free = bool(term.free_symbols)
                 free_features = expression_features(term) if has_free else None
-        if (
-            has_free
-            and memo is None
-            and free_features is not None
-            and free_features.nodes >= cfg.CALL_MEMO_MIN_NODES
-        ):
+        if has_free and memo is None and free_features is not None and free_features.nodes >= cfg.CALL_MEMO_MIN_NODES:
             memo = OracleMemo()
     if not has_free:
         return _fast_exact(term, assumptions, profiler, memo)
     identity = _stage_run(
-        profiler,
-        "elementary-identity",
-        lambda: elementary_identity_normal_form(term, assumptions),
+        profiler, "elementary-identity", lambda: elementary_identity_normal_form(term, assumptions)
     )
     if identity != term:
         term = quick_reduce(identity)
@@ -472,54 +343,33 @@ def _fast_classify_uncached(
         has_free = bool(term.free_symbols)
         if not has_free:
             return _fast_exact(term, assumptions, profiler, memo)
-    structural = (
-        memo.nonzero(term, assumptions)
-        if memo is not None
-        else quick_nonzero(term, assumptions)
-    )
+    structural = (memo.nonzero(term, assumptions) if memo is not None
+                  else quick_nonzero(term, assumptions))
     if structural is True:
-        return ZeroClassification(
-            Verdict.NONZERO_PROVEN,
-            "quick-nonzero",
-            detail="a cheap structural theorem proves nonzero",
-            evidence="structural-nonzero",
-        )
+        return ZeroClassification(Verdict.NONZERO_PROVEN, "quick-nonzero",
+                                  detail="a cheap structural theorem proves nonzero",
+                                  evidence="structural-nonzero")
     if structural is False:
-        return ZeroClassification(
-            Verdict.ZERO_PROVEN,
-            "quick-nonzero",
-            detail="a cheap structural theorem proves zero",
-            evidence="structural-zero",
-        )
+        return ZeroClassification(Verdict.ZERO_PROVEN, "quick-nonzero",
+                                  detail="a cheap structural theorem proves zero",
+                                  evidence="structural-zero")
     if term.is_Mul:
         unresolved = []
         for factor in term.args:
             sub = _fast_classify_uncached(factor, assumptions, rng, profiler, memo)
             if sub.verdict is Verdict.ZERO_PROVEN:
-                return ZeroClassification(
-                    Verdict.ZERO_PROVEN,
-                    "product-factor",
-                    detail="a product factor is exactly zero",
-                    evidence="factor-proof",
-                )
+                return ZeroClassification(Verdict.ZERO_PROVEN, "product-factor",
+                                          detail="a product factor is exactly zero", evidence="factor-proof")
             if sub.verdict is not Verdict.NONZERO_PROVEN:
                 unresolved.append(factor)
         if not unresolved:
-            return ZeroClassification(
-                Verdict.NONZERO_PROVEN,
-                "product-factor",
-                detail="every product factor is proven nonzero",
-                evidence="factor-proofs",
-            )
-    probe = random_witness_nonzero_check(
-        term, term.free_symbols, assumptions=assumptions, rng=rng
-    )
+            return ZeroClassification(Verdict.NONZERO_PROVEN, "product-factor",
+                                      detail="every product factor is proven nonzero", evidence="factor-proofs")
+    probe = random_witness_nonzero_check(term, term.free_symbols, assumptions=assumptions, rng=rng)
     if probe is not None and probe.verdict is Verdict.NONZERO_PROVEN:
         return probe
     if not has_nontrivial_assumptions(assumptions):
-        sz = finite_field_identity_test(
-            term, sorted(term.free_symbols, key=str), rng=rng
-        )
+        sz = finite_field_identity_test(term, sorted(term.free_symbols, key=str), rng=rng)
         if sz.verdict in (Verdict.ZERO_PROVEN, Verdict.NONZERO_PROVEN):
             return sz
     if probe is not None and probe.verdict is Verdict.NONZERO_LIKELY:
@@ -527,15 +377,9 @@ def _fast_classify_uncached(
     return _fast_unknown("fast symbolic stages were inconclusive")
 
 
-def zerotest(
-    expr,
-    assumptions=True,
-    use_cache: bool = True,
-    *,
-    rng: Optional[random.Random] = None,
-    seed: Optional[int] = None,
-    confidence: str = "probable",
-) -> Optional[bool]:
+def zerotest(expr, assumptions=True, use_cache: bool = True, *,
+             rng: random.Random | None = None, seed: int | None = None,
+             confidence: str = "probable") -> bool | None:
     """Fast proof-oriented zero oracle returning ``True``, ``False``, or ``None``.
 
     The normal oracle path never invokes ``sympy.simplify`` or the general
@@ -567,14 +411,10 @@ def zerotest(
     return None
 
 
-def profile_zerotest(
-    expr,
-    assumptions=True,
-    *,
-    rng: Optional[random.Random] = None,
-    seed: Optional[int] = None,
-    confidence: str = "probable",
-) -> ZeroTestProfile:
+def profile_zerotest(expr, assumptions=True, *,
+                     rng: random.Random | None = None,
+                     seed: int | None = None,
+                     confidence: str = "probable") -> ZeroTestProfile:
     """Run the fast oracle with opt-in per-stage timings.
 
     This bypasses the final-result cache so the trace reflects actual stage
@@ -587,24 +427,16 @@ def profile_zerotest(
         raise ValueError("confidence must be 'certified' or 'probable'")
     rng = rng or random.Random(seed)
     profiler = StageProfiler()
-    direct = profiler.run(
-        "flint-direct",
-        lambda: classify_flint_value(expr),
-        lambda value: "not-flint" if value is None else _verdict_name(value),
-    )
+    direct = profiler.run("flint-direct", lambda: classify_flint_value(expr),
+                          lambda value: "not-flint" if value is None else _verdict_name(value))
     if direct is not None:
         result = direct
     else:
         term = sp.sympify(expr)
         assumptions = normalize_assumptions(assumptions)
         result = _fast_classify_uncached(term, assumptions, rng, profiler)
-    value = (
-        True
-        if result.verdict is Verdict.ZERO_PROVEN
-        else False
-        if result.verdict is Verdict.NONZERO_PROVEN
-        else False
-        if confidence == "probable" and result.verdict is Verdict.NONZERO_LIKELY
-        else None
-    )
+    value = (True if result.verdict is Verdict.ZERO_PROVEN else
+             False if result.verdict is Verdict.NONZERO_PROVEN else
+             False if confidence == "probable" and result.verdict is Verdict.NONZERO_LIKELY else
+             None)
     return profiler.finish(value, result)

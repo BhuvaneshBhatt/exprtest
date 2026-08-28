@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 import sympy as sp
 from sympy.assumptions import assuming
 
@@ -71,7 +69,7 @@ def refine_with_assumptions(expr: sp.Expr, assumptions) -> sp.Expr:
     return refined
 
 
-def assumptions_hold(assumptions, substitutions: dict) -> Optional[bool]:
+def assumptions_hold(assumptions, substitutions: dict) -> bool | None:
     """Evaluate assumptions at an exact sample point.
 
     Returns ``True`` or ``False`` when SymPy can decide the instantiated
@@ -107,7 +105,7 @@ def has_nontrivial_assumptions(assumptions) -> bool:
     return normalize_assumptions(assumptions) is not sp.true
 
 
-def ask_property(predicate, term: sp.Expr, assumptions=True) -> Optional[bool]:
+def ask_property(predicate, term: sp.Expr, assumptions=True) -> bool | None:
     """Ask one cheap SymPy predicate under caller assumptions.
 
     This is the shared bounded assumptions gateway used by identity,
@@ -128,7 +126,7 @@ def ask_property(predicate, term: sp.Expr, assumptions=True) -> Optional[bool]:
     return None if value is None else bool(value)
 
 
-def is_positive(term: sp.Expr, assumptions=True) -> Optional[bool]:
+def is_positive(term: sp.Expr, assumptions=True) -> bool | None:
     """Return a cheap proof/refutation of positivity under assumptions."""
     value = sp.sympify(term).is_positive
     if value is not None:
@@ -136,7 +134,7 @@ def is_positive(term: sp.Expr, assumptions=True) -> Optional[bool]:
     return ask_property(sp.Q.positive, term, assumptions)
 
 
-def is_nonzero(term: sp.Expr, assumptions=True) -> Optional[bool]:
+def is_nonzero(term: sp.Expr, assumptions=True) -> bool | None:
     """Return a cheap proof/refutation of nonzeroness under assumptions."""
     value = sp.sympify(term).is_zero
     if value is not None:
@@ -144,7 +142,7 @@ def is_nonzero(term: sp.Expr, assumptions=True) -> Optional[bool]:
     return ask_property(sp.Q.nonzero, term, assumptions)
 
 
-def is_finite(term: sp.Expr, assumptions=True) -> Optional[bool]:
+def is_finite(term: sp.Expr, assumptions=True) -> bool | None:
     """Return a cheap proof/refutation of finiteness under assumptions."""
     value = sp.sympify(term).is_finite
     if value is not None:
@@ -152,7 +150,7 @@ def is_finite(term: sp.Expr, assumptions=True) -> Optional[bool]:
     return ask_property(sp.Q.finite, term, assumptions)
 
 
-def is_negative(term: sp.Expr, assumptions=True) -> Optional[bool]:
+def is_negative(term: sp.Expr, assumptions=True) -> bool | None:
     """Return a cheap proof/refutation of negativity under assumptions."""
     value = sp.sympify(term).is_negative
     if value is not None:
@@ -160,7 +158,7 @@ def is_negative(term: sp.Expr, assumptions=True) -> Optional[bool]:
     return ask_property(sp.Q.negative, term, assumptions)
 
 
-def is_nonnegative(term: sp.Expr, assumptions=True) -> Optional[bool]:
+def is_nonnegative(term: sp.Expr, assumptions=True) -> bool | None:
     """Return a cheap proof/refutation of nonnegativity under assumptions."""
     value = sp.sympify(term).is_nonnegative
     if value is not None:
@@ -168,7 +166,7 @@ def is_nonnegative(term: sp.Expr, assumptions=True) -> Optional[bool]:
     return ask_property(sp.Q.nonnegative, term, assumptions)
 
 
-def is_nonpositive(term: sp.Expr, assumptions=True) -> Optional[bool]:
+def is_nonpositive(term: sp.Expr, assumptions=True) -> bool | None:
     """Return a cheap proof/refutation of nonpositivity under assumptions."""
     value = sp.sympify(term).is_nonpositive
     if value is not None:
@@ -176,7 +174,7 @@ def is_nonpositive(term: sp.Expr, assumptions=True) -> Optional[bool]:
     return ask_property(sp.Q.nonpositive, term, assumptions)
 
 
-def is_real_value(term: sp.Expr, assumptions=True) -> Optional[bool]:
+def is_real_value(term: sp.Expr, assumptions=True) -> bool | None:
     """Return a cheap proof/refutation that a value is real."""
     value = sp.sympify(term).is_real
     if value is not None:
@@ -184,7 +182,7 @@ def is_real_value(term: sp.Expr, assumptions=True) -> Optional[bool]:
     return ask_property(sp.Q.real, term, assumptions)
 
 
-def is_integer_value(term: sp.Expr, assumptions=True) -> Optional[bool]:
+def is_integer_value(term: sp.Expr, assumptions=True) -> bool | None:
     """Return a cheap proof/refutation that a value is integral."""
     value = sp.sympify(term).is_integer
     if value is not None:

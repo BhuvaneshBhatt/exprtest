@@ -9,7 +9,6 @@ unambiguous.
 from __future__ import annotations
 
 from math import lcm
-from typing import Optional
 
 import sympy as sp
 
@@ -23,7 +22,7 @@ from ._negative_cache import log_rel_inapplicable
 from ._result import Verdict, ZeroClassification
 
 
-def _ask(prop, assumptions) -> Optional[bool]:
+def _ask(prop, assumptions) -> bool | None:
     facts = assumption_facts(assumptions)
     try:
         if facts:
@@ -40,7 +39,8 @@ def _positive(term: sp.Expr, assumptions) -> bool:
     facts = domain_facts(term, assumptions)
     if facts.positive is True:
         return True
-    if not term.free_symbols and facts.algebraic is True and facts.real is True:
+    if (not term.free_symbols and facts.algebraic is True
+            and facts.real is True):
         from ._exact_constants import algebraic_sign
 
         return algebraic_sign(term) == 1
@@ -84,17 +84,13 @@ def normalize_logs(term: sp.Expr, assumptions=True) -> sp.Expr:
     return current
 
 
-def _log_term(term: sp.Expr, assumptions) -> Optional[tuple[sp.Rational, sp.Expr]]:
+def _log_term(term: sp.Expr, assumptions) -> tuple[sp.Rational, sp.Expr] | None:
     """Extract ``q*log(a)`` with rational q and positive exact algebraic a."""
     coeff, rest = term.as_coeff_Mul(rational=True)
     if rest.func is not sp.log or len(rest.args) != 1 or not coeff.is_Rational:
         return None
     base = rest.args[0]
-    if (
-        base.free_symbols
-        or base.is_algebraic is not True
-        or not _positive(base, assumptions)
-    ):
+    if base.free_symbols or base.is_algebraic is not True or not _positive(base, assumptions):
         return None
     return sp.Rational(coeff), base
 
@@ -123,12 +119,8 @@ def _rational_log_vector(term: sp.Expr, assumptions, budget: ExactBudget):
             except EXACT_METHOD_ERRORS:
                 return None
             for prime, power in factors.items():
-                vector[int(prime)] = vector.get(
-                    int(prime), sp.Rational(0)
-                ) + coeff * sign * int(power)
-    return (
-        {prime: power for prime, power in vector.items() if power != 0} if saw else None
-    )
+                vector[int(prime)] = vector.get(int(prime), sp.Rational(0)) + coeff * sign * int(power)
+    return {prime: power for prime, power in vector.items() if power != 0} if saw else None
 
 
 def rational_log_test(term: sp.Expr, assumptions=True) -> ZeroClassification:
@@ -138,24 +130,14 @@ def rational_log_test(term: sp.Expr, assumptions=True) -> ZeroClassification:
     budget = ExactBudget()
     vector = _rational_log_vector(term, assumptions, budget)
     if vector is None:
-        return ZeroClassification(
-            Verdict.UNKNOWN,
-            "rational-log",
-            detail="not a bounded positive-rational log relation",
-        )
+        return ZeroClassification(Verdict.UNKNOWN, "rational-log", detail="not a bounded positive-rational log relation")
     if not vector:
-        return ZeroClassification(
-            Verdict.ZERO_PROVEN,
-            "rational-log",
-            detail="prime-exponent vector cancels exactly",
-            evidence="rational-prime-factorization",
-        )
-    return ZeroClassification(
-        Verdict.NONZERO_PROVEN,
-        "rational-log",
-        detail="prime-exponent vector is nonzero",
-        evidence="rational-prime-factorization",
-    )
+        return ZeroClassification(Verdict.ZERO_PROVEN, "rational-log",
+                                  detail="prime-exponent vector cancels exactly",
+                                  evidence="rational-prime-factorization")
+    return ZeroClassification(Verdict.NONZERO_PROVEN, "rational-log",
+                              detail="prime-exponent vector is nonzero",
+                              evidence="rational-prime-factorization")
 
 
 def log_dependence_test(term: sp.Expr, assumptions=True) -> ZeroClassification:
@@ -168,9 +150,7 @@ def log_dependence_test(term: sp.Expr, assumptions=True) -> ZeroClassification:
     """
     budget = ExactBudget()
     if not within_budget(sp.sympify(term), budget):
-        return ZeroClassification(
-            Verdict.UNKNOWN, "log-dependence", detail="exact-method budget exceeded"
-        )
+        return ZeroClassification(Verdict.UNKNOWN, "log-dependence", detail="exact-method budget exceeded")
 
     assumptions = normalize_assumptions(assumptions)
     term = normalize_logs(sp.sympify(term), assumptions)
@@ -180,16 +160,10 @@ def log_dependence_test(term: sp.Expr, assumptions=True) -> ZeroClassification:
             return rational
     parts = term.args if term.is_Add else (term,)
     if len(parts) > budget.max_logs:
-        return ZeroClassification(
-            Verdict.UNKNOWN, "log-dependence", detail="log-term budget exceeded"
-        )
+        return ZeroClassification(Verdict.UNKNOWN, "log-dependence", detail="log-term budget exceeded")
     items = [_log_term(part, assumptions) for part in parts]
     if not items or any(item is None for item in items):
-        return ZeroClassification(
-            Verdict.UNKNOWN,
-            "log-dependence",
-            detail="expression is not a supported rational log relation",
-        )
+        return ZeroClassification(Verdict.UNKNOWN, "log-dependence", detail="expression is not a supported rational log relation")
 
     pairs = [item for item in items if item is not None]
 
@@ -201,8 +175,7 @@ def log_dependence_test(term: sp.Expr, assumptions=True) -> ZeroClassification:
     coeffs = {base: coeff for base, coeff in coeffs.items() if coeff != 0}
     if not coeffs:
         return ZeroClassification(
-            Verdict.ZERO_PROVEN,
-            "log-dependence",
+            Verdict.ZERO_PROVEN, "log-dependence",
             detail="branch-safe logarithm normalization cancels all exact bases",
             evidence="exact-log-base-vector",
         )
@@ -218,26 +191,22 @@ def log_dependence_test(term: sp.Expr, assumptions=True) -> ZeroClassification:
     relation = quick_reduce(product - 1)
     if relation == 0 or relation.is_zero is True:
         return ZeroClassification(
-            Verdict.ZERO_PROVEN,
-            "log-dependence",
+            Verdict.ZERO_PROVEN, "log-dependence",
             detail="exact multiplicative relation reduced structurally to one",
             evidence="exact-log-multiplicative-relation",
         )
     try:
         from ._algebraic import tower_algebraic_test
-
         tower = tower_algebraic_test(relation)
         if tower.verdict is Verdict.ZERO_PROVEN:
             return ZeroClassification(
-                Verdict.ZERO_PROVEN,
-                "log-dependence",
+                Verdict.ZERO_PROVEN, "log-dependence",
                 detail="bounded algebraic-tower arithmetic proves the log arguments multiply to one",
                 evidence="exact-log-tower-relation",
             )
         if tower.verdict is Verdict.NONZERO_PROVEN:
             return ZeroClassification(
-                Verdict.NONZERO_PROVEN,
-                "log-dependence",
+                Verdict.NONZERO_PROVEN, "log-dependence",
                 detail="bounded algebraic-tower arithmetic proves the log arguments do not multiply to one",
                 evidence="exact-log-tower-relation",
             )
@@ -265,11 +234,7 @@ def log_dependence_test(term: sp.Expr, assumptions=True) -> ZeroClassification:
             )
     except EXACT_METHOD_ERRORS:
         pass
-    return ZeroClassification(
-        Verdict.UNKNOWN,
-        "log-dependence",
-        detail="algebraic product relation was inconclusive",
-    )
+    return ZeroClassification(Verdict.UNKNOWN, "log-dependence", detail="algebraic product relation was inconclusive")
 
 
 def _normalize_exp_log_once(term: sp.Expr, assumptions) -> sp.Expr:
@@ -293,11 +258,8 @@ def _normalize_exp_log_once(term: sp.Expr, assumptions) -> sp.Expr:
                 arg = sp.Add(*kept)
         if arg.func is sp.log and len(arg.args) == 1:
             base = arg.args[0]
-            if (
-                not base.free_symbols
-                and base.is_finite is True
-                and base.is_zero is False
-            ):
+            if (not base.free_symbols and base.is_finite is True
+                    and base.is_zero is False):
                 return base
             if _positive(base, assumptions):
                 return base
@@ -367,7 +329,7 @@ def normalize_exp_log(term: sp.Expr, assumptions=True) -> sp.Expr:
     return current
 
 
-def _periodic_zero(term: sp.Expr, assumptions) -> Optional[bool]:
+def _periodic_zero(term: sp.Expr, assumptions) -> bool | None:
     if len(term.args) != 1:
         return None
     arg = term.args[0]
@@ -395,9 +357,7 @@ def transcendental_zero_test(term: sp.Expr, assumptions=True) -> ZeroClassificat
         if rational.verdict is not Verdict.UNKNOWN:
             return rational
 
-    normalized = (
-        normalize_exp_log(term, assumptions) if term.has(sp.log, sp.exp) else term
-    )
+    normalized = normalize_exp_log(term, assumptions) if term.has(sp.log, sp.exp) else term
     if normalized != term:
         if normalized == 0:
             return ZeroClassification(

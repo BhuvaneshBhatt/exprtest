@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 import sympy as sp
 
@@ -33,9 +32,9 @@ class ExactBudget:
 
 def within_budget(
     term: sp.Expr,
-    budget: Optional[ExactBudget] = None,
+    budget: ExactBudget | None = None,
     *,
-    features: Optional[ExprFeatures] = None,
+    features: ExprFeatures | None = None,
 ) -> bool:
     """Return whether ``term`` fits the common exact-method budget."""
     active = budget or ExactBudget()
@@ -53,9 +52,9 @@ def within_budget(
 def stage_allowed(
     term: sp.Expr,
     stage: str,
-    budget: Optional[ExactBudget] = None,
+    budget: ExactBudget | None = None,
     *,
-    features: Optional[ExprFeatures] = None,
+    features: ExprFeatures | None = None,
 ) -> bool:
     """Apply a method-specific gate using one structural fingerprint."""
     active = budget or ExactBudget()
@@ -63,14 +62,12 @@ def stage_allowed(
     if not within_budget(term, active, features=feats):
         return False
     if stage == "resultant":
-        return (
-            feats.generators <= active.max_result_vars
-            and feats.ops <= active.max_ops // 2
-        )
+        return feats.generators <= active.max_result_vars and feats.ops <= active.max_ops // 2
     if stage == "tower":
-        return feats.generators <= min(
-            active.max_gens, cfg.TOWER_MAX_GENS
-        ) and feats.ops <= min(active.max_ops, cfg.EXACT_TOWER_MAX_OPS)
+        return (
+            feats.generators <= min(active.max_gens, cfg.TOWER_MAX_GENS)
+            and feats.ops <= min(active.max_ops, cfg.EXACT_TOWER_MAX_OPS)
+        )
     if stage == "pslq":
         parts = len(term.args) if term.is_Add else 1
         return parts <= active.max_pslq_terms and feats.ops <= active.max_ops // 2
@@ -79,10 +76,7 @@ def stage_allowed(
     if stage == "cyclotomic":
         return feats.ops <= active.max_ops // 2
     if stage == "factor-rational":
-        return (
-            feats.max_int_bits <= cfg.EXACT_MAX_FACTOR_BITS
-            and feats.logs <= active.max_logs
-        )
+        return feats.max_int_bits <= cfg.EXACT_MAX_FACTOR_BITS and feats.logs <= active.max_logs
     if stage == "special":
         return feats.depth <= cfg.EXACT_MAX_SPECIAL_DEPTH
     return True

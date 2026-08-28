@@ -1,10 +1,8 @@
 """Classification result types shared by all zero-testing stages."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
 
 
 class Verdict(Enum):
@@ -28,15 +26,15 @@ class ZeroClassification:
     verdict: Verdict
     method: str
     detail: str = ""
-    precision_bits: Optional[int] = None
-    trials: Optional[int] = None
-    evidence: Optional[str] = None
-    error_bound: Optional[float] = None
-    requested_error: Optional[float] = None
+    precision_bits: int | None = None
+    trials: int | None = None
+    evidence: str | None = None
+    error_bound: float | None = None
+    requested_error: float | None = None
     enclosure_history: tuple[str, ...] = ()
 
     @property
-    def is_zero(self) -> Optional[bool]:
+    def is_zero(self) -> bool | None:
         if self.verdict is Verdict.ZERO_PROVEN:
             return True
         if self.verdict in (Verdict.NONZERO_PROVEN, Verdict.NONZERO_LIKELY):
@@ -82,9 +80,7 @@ class ZeroClassification:
     def __repr__(self):
         bits = f", {self.precision_bits} bits" if self.precision_bits else ""
         trials = f", {self.trials} trials" if self.trials else ""
-        error = (
-            f", error<={self.error_bound:.3g}" if self.error_bound is not None else ""
-        )
+        error = f", error<={self.error_bound:.3g}" if self.error_bound is not None else ""
         return (
             f"<ZeroClassification {self.verdict.value} via {self.method}"
             f"{bits}{trials}{error}: {self.detail}>"

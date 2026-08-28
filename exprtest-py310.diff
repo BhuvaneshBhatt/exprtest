@@ -1,0 +1,1326 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 903b5ba..4e0d444 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -9,7 +9,7 @@ jobs:
+     runs-on: ubuntu-latest
+     strategy:
+       matrix:
+-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
++        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+     steps:
+       - uses: actions/checkout@v4
+       - uses: actions/setup-python@v5
+@@ -26,7 +26,7 @@ jobs:
+       - uses: actions/checkout@v4
+       - uses: actions/setup-python@v5
+         with:
+-          python-version: "3.9"
++          python-version: "3.10"
+       - run: python -m pip install --upgrade pip
+       - run: python -m pip install -e . "sympy==1.12" "mpmath==1.3.0" "pytest==7.0.0"
+       - run: pytest -m "not flint and not scipy_compat"
+@@ -36,7 +36,7 @@ jobs:
+     runs-on: ubuntu-latest
+     strategy:
+       matrix:
+-        python-version: ["3.9", "3.12", "3.14"]
++        python-version: ["3.10", "3.12", "3.14"]
+     steps:
+       - uses: actions/checkout@v4
+       - uses: actions/setup-python@v5
+@@ -52,7 +52,7 @@ jobs:
+       - uses: actions/checkout@v4
+       - uses: actions/setup-python@v5
+         with:
+-          python-version: "3.9"
++          python-version: "3.10"
+       - run: python -m pip install --upgrade pip
+       - run: python -m pip install -e . "sympy==1.12" "mpmath==1.3.0" "pytest==7.0.0" "python-flint==0.5.0"
+       - run: pytest -m "not scipy_compat"
+diff --git a/.github/workflows/publish.yml b/.github/workflows/publish.yml
+index f1a918a..c2d5b94 100644
+--- a/.github/workflows/publish.yml
++++ b/.github/workflows/publish.yml
+@@ -59,7 +59,7 @@ jobs:
+     strategy:
+       fail-fast: false
+       matrix:
+-        python-version: ["3.9", "3.14"]
++        python-version: ["3.10", "3.14"]
+     steps:
+       - name: Check out repository
+         uses: actions/checkout@v4
+diff --git a/docs/development.md b/docs/development.md
+index 6bb402d..d69f973 100644
+--- a/docs/development.md
++++ b/docs/development.md
+@@ -78,7 +78,7 @@ supported Python versions before PyPI publication.
+ 
+ ## Supported environments
+ 
+-CI covers Python 3.9-3.14 on Linux, declared minimum SymPy/mpmath versions,
++CI covers Python 3.10-3.14 on Linux, declared minimum SymPy/mpmath versions,
+ FLINT-enabled configurations, and targeted Windows/macOS smoke tests. Timeout
+ support degrades safely where `SIGALRM` is unavailable or execution is outside
+ the main thread.
+diff --git a/pyproject.toml b/pyproject.toml
+index d224653..4e9fa78 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -7,7 +7,7 @@ name = "exprtest"
+ version = "0.1.0"
+ description = "Fast symbolic expression predicates with exact, numeric, and heuristic methods."
+ readme = "README.md"
+-requires-python = ">=3.9"
++requires-python = ">=3.10"
+ license = "GPL-3.0-only"
+ license-files = ["LICENSE"]
+ authors = [{ name = "Bhuvanesh Bhatt" }]
+@@ -16,7 +16,6 @@ classifiers = [
+     "Development Status :: 3 - Alpha",
+     "Intended Audience :: Science/Research",
+     "Programming Language :: Python :: 3",
+-    "Programming Language :: Python :: 3.9",
+     "Programming Language :: Python :: 3.10",
+     "Programming Language :: Python :: 3.11",
+     "Programming Language :: Python :: 3.12",
+@@ -69,8 +68,5 @@ exclude_also = [
+ ]
+ 
+ [tool.ruff]
+-target-version = "py39"
++target-version = "py310"
+ 
+-[tool.ruff.lint]
+-# PEP 604 ``X | None`` annotations require Python 3.10 syntax.
+-ignore = ["UP045"]
+diff --git a/src/exprtest/_algebraic_bounds.py b/src/exprtest/_algebraic_bounds.py
+index 69a427a..e063240 100644
+--- a/src/exprtest/_algebraic_bounds.py
++++ b/src/exprtest/_algebraic_bounds.py
+@@ -4,7 +4,6 @@ from __future__ import annotations
+ 
+ from dataclasses import dataclass
+ from functools import lru_cache
+-from typing import Optional
+ 
+ import sympy as sp
+ 
+@@ -25,7 +24,7 @@ class AlgebraicGap:
+     """Certified lower bound for the magnitude of a nonzero algebraic value."""
+ 
+     lower: sp.Expr
+-    polynomial: Optional[sp.Poly]
++    polynomial: sp.Poly | None
+     method: str = "reciprocal-cauchy"
+ 
+ 
+@@ -47,7 +46,7 @@ def _ceil_root(value: sp.Rational, degree: int) -> sp.Integer:
+     return sp.Integer(high)
+ 
+ 
+-def _cauchy_gap(poly: sp.Poly) -> Optional[sp.Rational]:
++def _cauchy_gap(poly: sp.Poly) -> sp.Rational | None:
+     coeffs = poly.all_coeffs()
+     constant = coeffs[-1]
+     if constant == 0:
+@@ -57,7 +56,7 @@ def _cauchy_gap(poly: sp.Poly) -> Optional[sp.Rational]:
+     return sp.Rational(1, 1) / (1 + ratio)
+ 
+ 
+-def _fujiwara_gap(poly: sp.Poly) -> Optional[sp.Rational]:
++def _fujiwara_gap(poly: sp.Poly) -> sp.Rational | None:
+     """Rationalized reciprocal Fujiwara lower root bound."""
+     coeffs = poly.all_coeffs()
+     constant = coeffs[-1]
+@@ -111,7 +110,7 @@ def _dyadic_root_upper(poly: sp.Poly) -> sp.Rational:
+     return sp.Rational(high)
+ 
+ 
+-def _dyadic_gap(poly: sp.Poly) -> Optional[sp.Rational]:
++def _dyadic_gap(poly: sp.Poly) -> sp.Rational | None:
+     """Lower bound nonzero roots via a refined reciprocal root radius."""
+     coeffs = poly.all_coeffs()
+     if not coeffs or coeffs[-1] == 0:
+@@ -123,7 +122,7 @@ def _dyadic_gap(poly: sp.Poly) -> Optional[sp.Rational]:
+ 
+ 
+ @lru_cache(maxsize=cfg.EXACT_BOUND_CACHE_SIZE)
+-def _poly_gap_cheap_cached(term: sp.Expr) -> Optional[AlgebraicGap]:
++def _poly_gap_cheap_cached(term: sp.Expr) -> AlgebraicGap | None:
+     """Return the best inexpensive minimal-polynomial separation bound."""
+     marker = sp.Dummy("z")
+     try:
+@@ -141,7 +140,7 @@ def _poly_gap_cheap_cached(term: sp.Expr) -> Optional[AlgebraicGap]:
+ 
+ 
+ @lru_cache(maxsize=cfg.EXACT_BOUND_CACHE_SIZE)
+-def _poly_gap_cached(term: sp.Expr) -> Optional[AlgebraicGap]:
++def _poly_gap_cached(term: sp.Expr) -> AlgebraicGap | None:
+     """Refine a cheap bound only when a caller explicitly asks for strength."""
+     cheap = _poly_gap_cheap_cached(term)
+     if cheap is None:
+@@ -173,7 +172,7 @@ def _root_upper(poly: sp.Poly) -> sp.Rational:
+     return min(cauchy, sp.Rational(fujiwara))
+ 
+ 
+-def _tree_upper(term: sp.Expr, limits: dict[sp.Symbol, sp.Rational]) -> Optional[sp.Rational]:
++def _tree_upper(term: sp.Expr, limits: dict[sp.Symbol, sp.Rational]) -> sp.Rational | None:
+     """Bound an expression tree over algebraic generators without expansion."""
+     if term.is_Rational:
+         return abs(sp.Rational(term))
+@@ -212,7 +211,7 @@ def _poly_upper(term: sp.Expr, vars_: tuple[sp.Symbol, ...],
+ 
+ 
+ @lru_cache(maxsize=cfg.EXACT_BOUND_CACHE_SIZE)
+-def _resultant_gap_cached(term: sp.Expr, include_poly: bool = True) -> Optional[AlgebraicGap]:
++def _resultant_gap_cached(term: sp.Expr, include_poly: bool = True) -> AlgebraicGap | None:
+     """Bound one conjugate using an iterated exact resultant product.
+ 
+     For monic defining polynomials the iterated resultant is the product of
+@@ -264,7 +263,7 @@ def _resultant_gap_cached(term: sp.Expr, include_poly: bool = True) -> Optional[
+         return None
+ 
+ 
+-def algebraic_gap_bound(term: sp.Expr, refine: bool = True) -> Optional[AlgebraicGap]:
++def algebraic_gap_bound(term: sp.Expr, refine: bool = True) -> AlgebraicGap | None:
+     """Return a certified algebraic separation bound.
+ 
+     ``refine=False`` stops after the inexpensive Cauchy/Fujiwara layer. The
+diff --git a/src/exprtest/_algebraic_model.py b/src/exprtest/_algebraic_model.py
+index ef3bbd2..c46df4d 100644
+--- a/src/exprtest/_algebraic_model.py
++++ b/src/exprtest/_algebraic_model.py
+@@ -5,7 +5,6 @@ from __future__ import annotations
+ from dataclasses import dataclass
+ from functools import lru_cache
+ from math import prod
+-from typing import Optional
+ 
+ import sympy as sp
+ from sympy.polys.numberfields import to_number_field
+@@ -132,7 +131,7 @@ def extract_algebraic_generators(expr: sp.Expr) -> tuple[sp.Expr, ...]:
+ 
+ 
+ 
+-def build_algebraic_model(expr: sp.Expr) -> Optional[AlgebraicModel]:
++def build_algebraic_model(expr: sp.Expr) -> AlgebraicModel | None:
+     """Build a rational-polynomial model and generator minimal polynomials.
+ 
+     Returns ``None`` when exact modeling is unsupported or exceeds the
+@@ -249,7 +248,7 @@ def _model_denominator_is_proven_nonzero(model: AlgebraicModel) -> bool:
+         return False
+ 
+ 
+-def _generator_degree_product(expr: sp.Expr, limit: int) -> Optional[int]:
++def _generator_degree_product(expr: sp.Expr, limit: int) -> int | None:
+     """Estimate the product of generator degrees, stopping after ``limit``."""
+     try:
+         modeled_expr = sp.cancel(expr)
+@@ -318,7 +317,7 @@ def algebraic_relation_reduction_test(expr: sp.Expr) -> ZeroClassification:
+     )
+ 
+ 
+-def common_number_field_test(expr: sp.Expr, model: Optional[AlgebraicModel] = None) -> ZeroClassification:
++def common_number_field_test(expr: sp.Expr, model: AlgebraicModel | None = None) -> ZeroClassification:
+     """Decide a closed algebraic expression in one exact number field.
+ 
+     The conversion is gated by a degree-product budget because primitive
+diff --git a/src/exprtest/_algebraic_tower.py b/src/exprtest/_algebraic_tower.py
+index 321128b..a1d5e33 100644
+--- a/src/exprtest/_algebraic_tower.py
++++ b/src/exprtest/_algebraic_tower.py
+@@ -3,7 +3,6 @@
+ from __future__ import annotations
+ 
+ from dataclasses import dataclass
+-from typing import Optional
+ 
+ import sympy as sp
+ 
+@@ -51,7 +50,7 @@ def _tower_nodes(term: sp.Expr, out: list[sp.Expr]) -> None:
+ 
+ 
+ def _tower_relation(term: sp.Expr, sym: sp.Symbol,
+-                    repl: dict[sp.Expr, sp.Symbol]) -> Optional[sp.Poly]:
++                    repl: dict[sp.Expr, sp.Symbol]) -> sp.Poly | None:
+     """Build a defining relation whose coefficients use earlier symbols."""
+     try:
+         if term == sp.I:
+@@ -73,7 +72,7 @@ def _tower_relation(term: sp.Expr, sym: sp.Symbol,
+ 
+ 
+ def _tower_parts(term: sp.Expr, syms: frozenset[sp.Symbol],
+-                 max_terms: int) -> Optional[tuple[sp.Expr, sp.Expr, frozenset[sp.Symbol]]]:
++                 max_terms: int) -> tuple[sp.Expr, sp.Expr, frozenset[sp.Symbol]] | None:
+     """Represent a rational DAG while tracking each subtree's tower support.
+ 
+     Term-count checks use only variables that actually occur in the current
+@@ -163,7 +162,7 @@ def _tower_support(active: frozenset[sp.Symbol],
+     return frozenset(known)
+ 
+ 
+-def build_algebraic_tower(term: sp.Expr) -> Optional[AlgebraicTower]:
++def build_algebraic_tower(term: sp.Expr) -> AlgebraicTower | None:
+     """Build a dependency-ordered triangular model for nested algebraic values.
+ 
+     The model is constructed structurally rather than through ``cancel`` or
+@@ -268,7 +267,7 @@ def _sparse_reduce_var(terms: dict[tuple[int, ...], sp.Rational],
+ 
+ 
+ def _tower_sparse_rem(poly: sp.Expr, tower: AlgebraicTower,
+-                      support: frozenset[sp.Symbol]) -> Optional[sp.Expr]:
++                      support: frozenset[sp.Symbol]) -> sp.Expr | None:
+     """Reduce a tower polynomial with sparse monomial arithmetic.
+ 
+     Only monic triangular relations are admitted. Unsupported relations fall
+@@ -294,7 +293,7 @@ def _tower_sparse_rem(poly: sp.Expr, tower: AlgebraicTower,
+ 
+ 
+ def _tower_rem(poly: sp.Expr, tower: AlgebraicTower,
+-               support: Optional[frozenset[sp.Symbol]] = None) -> sp.Expr:
++               support: frozenset[sp.Symbol] | None = None) -> sp.Expr:
+     """Reduce only the dependency-closed tower levels used by ``poly``."""
+     rem = poly
+     active = support if support is not None else _tower_support(
+diff --git a/src/exprtest/_assumptions.py b/src/exprtest/_assumptions.py
+index 4f62e77..39d050f 100644
+--- a/src/exprtest/_assumptions.py
++++ b/src/exprtest/_assumptions.py
+@@ -2,8 +2,6 @@
+ 
+ from __future__ import annotations
+ 
+-from typing import Optional
+-
+ import sympy as sp
+ from sympy.assumptions import assuming
+ 
+@@ -71,7 +69,7 @@ def refine_with_assumptions(expr: sp.Expr, assumptions) -> sp.Expr:
+     return refined
+ 
+ 
+-def assumptions_hold(assumptions, substitutions: dict) -> Optional[bool]:
++def assumptions_hold(assumptions, substitutions: dict) -> bool | None:
+     """Evaluate assumptions at an exact sample point.
+ 
+     Returns ``True`` or ``False`` when SymPy can decide the instantiated
+@@ -107,7 +105,7 @@ def has_nontrivial_assumptions(assumptions) -> bool:
+     return normalize_assumptions(assumptions) is not sp.true
+ 
+ 
+-def ask_property(predicate, term: sp.Expr, assumptions=True) -> Optional[bool]:
++def ask_property(predicate, term: sp.Expr, assumptions=True) -> bool | None:
+     """Ask one cheap SymPy predicate under caller assumptions.
+ 
+     This is the shared bounded assumptions gateway used by identity,
+@@ -128,7 +126,7 @@ def ask_property(predicate, term: sp.Expr, assumptions=True) -> Optional[bool]:
+     return None if value is None else bool(value)
+ 
+ 
+-def is_positive(term: sp.Expr, assumptions=True) -> Optional[bool]:
++def is_positive(term: sp.Expr, assumptions=True) -> bool | None:
+     """Return a cheap proof/refutation of positivity under assumptions."""
+     value = sp.sympify(term).is_positive
+     if value is not None:
+@@ -136,7 +134,7 @@ def is_positive(term: sp.Expr, assumptions=True) -> Optional[bool]:
+     return ask_property(sp.Q.positive, term, assumptions)
+ 
+ 
+-def is_nonzero(term: sp.Expr, assumptions=True) -> Optional[bool]:
++def is_nonzero(term: sp.Expr, assumptions=True) -> bool | None:
+     """Return a cheap proof/refutation of nonzeroness under assumptions."""
+     value = sp.sympify(term).is_zero
+     if value is not None:
+@@ -144,7 +142,7 @@ def is_nonzero(term: sp.Expr, assumptions=True) -> Optional[bool]:
+     return ask_property(sp.Q.nonzero, term, assumptions)
+ 
+ 
+-def is_finite(term: sp.Expr, assumptions=True) -> Optional[bool]:
++def is_finite(term: sp.Expr, assumptions=True) -> bool | None:
+     """Return a cheap proof/refutation of finiteness under assumptions."""
+     value = sp.sympify(term).is_finite
+     if value is not None:
+@@ -152,7 +150,7 @@ def is_finite(term: sp.Expr, assumptions=True) -> Optional[bool]:
+     return ask_property(sp.Q.finite, term, assumptions)
+ 
+ 
+-def is_negative(term: sp.Expr, assumptions=True) -> Optional[bool]:
++def is_negative(term: sp.Expr, assumptions=True) -> bool | None:
+     """Return a cheap proof/refutation of negativity under assumptions."""
+     value = sp.sympify(term).is_negative
+     if value is not None:
+@@ -160,7 +158,7 @@ def is_negative(term: sp.Expr, assumptions=True) -> Optional[bool]:
+     return ask_property(sp.Q.negative, term, assumptions)
+ 
+ 
+-def is_nonnegative(term: sp.Expr, assumptions=True) -> Optional[bool]:
++def is_nonnegative(term: sp.Expr, assumptions=True) -> bool | None:
+     """Return a cheap proof/refutation of nonnegativity under assumptions."""
+     value = sp.sympify(term).is_nonnegative
+     if value is not None:
+@@ -168,7 +166,7 @@ def is_nonnegative(term: sp.Expr, assumptions=True) -> Optional[bool]:
+     return ask_property(sp.Q.nonnegative, term, assumptions)
+ 
+ 
+-def is_nonpositive(term: sp.Expr, assumptions=True) -> Optional[bool]:
++def is_nonpositive(term: sp.Expr, assumptions=True) -> bool | None:
+     """Return a cheap proof/refutation of nonpositivity under assumptions."""
+     value = sp.sympify(term).is_nonpositive
+     if value is not None:
+@@ -176,7 +174,7 @@ def is_nonpositive(term: sp.Expr, assumptions=True) -> Optional[bool]:
+     return ask_property(sp.Q.nonpositive, term, assumptions)
+ 
+ 
+-def is_real_value(term: sp.Expr, assumptions=True) -> Optional[bool]:
++def is_real_value(term: sp.Expr, assumptions=True) -> bool | None:
+     """Return a cheap proof/refutation that a value is real."""
+     value = sp.sympify(term).is_real
+     if value is not None:
+@@ -184,7 +182,7 @@ def is_real_value(term: sp.Expr, assumptions=True) -> Optional[bool]:
+     return ask_property(sp.Q.real, term, assumptions)
+ 
+ 
+-def is_integer_value(term: sp.Expr, assumptions=True) -> Optional[bool]:
++def is_integer_value(term: sp.Expr, assumptions=True) -> bool | None:
+     """Return a cheap proof/refutation that a value is integral."""
+     value = sp.sympify(term).is_integer
+     if value is not None:
+diff --git a/src/exprtest/_call_memo.py b/src/exprtest/_call_memo.py
+index acb06bd..1237161 100644
+--- a/src/exprtest/_call_memo.py
++++ b/src/exprtest/_call_memo.py
+@@ -2,8 +2,6 @@
+ 
+ from __future__ import annotations
+ 
+-from typing import Optional
+-
+ import sympy as sp
+ 
+ from ._domains import NumberKind, number_kind
+@@ -22,10 +20,10 @@ class OracleMemo:
+     __slots__ = ("defined_cache", "feature_cache", "kind_cache", "nonzero_cache")
+ 
+     def __init__(self) -> None:
+-        self.nonzero_cache: Optional[dict[tuple[sp.Expr, object], Optional[bool]]] = None
+-        self.defined_cache: Optional[dict[tuple[sp.Expr, object], Optional[bool]]] = None
+-        self.kind_cache: Optional[dict[sp.Expr, NumberKind]] = None
+-        self.feature_cache: Optional[dict[sp.Expr, ExprFeatures]] = None
++        self.nonzero_cache: dict[tuple[sp.Expr, object], bool | None] | None = None
++        self.defined_cache: dict[tuple[sp.Expr, object], bool | None] | None = None
++        self.kind_cache: dict[sp.Expr, NumberKind] | None = None
++        self.feature_cache: dict[sp.Expr, ExprFeatures] | None = None
+ 
+     def features(self, term: sp.Expr) -> ExprFeatures:
+         """Return structural features, reusing facts within this oracle call."""
+@@ -38,7 +36,7 @@ class OracleMemo:
+             self.feature_cache[term] = cached
+         return cached
+ 
+-    def nonzero(self, term: sp.Expr, assumptions=True) -> Optional[bool]:
++    def nonzero(self, term: sp.Expr, assumptions=True) -> bool | None:
+         """Return a cached cheap nonzero proof for ``term``."""
+         from ._nonzero import quick_nonzero
+ 
+@@ -46,7 +44,7 @@ class OracleMemo:
+             self.nonzero_cache = {}
+         return quick_nonzero(term, assumptions, context=self)
+ 
+-    def defined_nonzero(self, term: sp.Expr, assumptions=True) -> Optional[bool]:
++    def defined_nonzero(self, term: sp.Expr, assumptions=True) -> bool | None:
+         """Return a cached proof that ``term`` is finite and nonzero."""
+         from ._defined import quick_defined_nonzero
+ 
+diff --git a/src/exprtest/_cost.py b/src/exprtest/_cost.py
+index c5c784a..96c2c2d 100644
+--- a/src/exprtest/_cost.py
++++ b/src/exprtest/_cost.py
+@@ -3,7 +3,6 @@
+ from __future__ import annotations
+ 
+ from dataclasses import dataclass
+-from typing import Optional
+ 
+ import sympy as sp
+ 
+@@ -33,9 +32,9 @@ class ExactBudget:
+ 
+ def within_budget(
+     term: sp.Expr,
+-    budget: Optional[ExactBudget] = None,
++    budget: ExactBudget | None = None,
+     *,
+-    features: Optional[ExprFeatures] = None,
++    features: ExprFeatures | None = None,
+ ) -> bool:
+     """Return whether ``term`` fits the common exact-method budget."""
+     active = budget or ExactBudget()
+@@ -53,9 +52,9 @@ def within_budget(
+ def stage_allowed(
+     term: sp.Expr,
+     stage: str,
+-    budget: Optional[ExactBudget] = None,
++    budget: ExactBudget | None = None,
+     *,
+-    features: Optional[ExprFeatures] = None,
++    features: ExprFeatures | None = None,
+ ) -> bool:
+     """Apply a method-specific gate using one structural fingerprint."""
+     active = budget or ExactBudget()
+diff --git a/src/exprtest/_cyclotomic.py b/src/exprtest/_cyclotomic.py
+index 48ddda9..238eecf 100644
+--- a/src/exprtest/_cyclotomic.py
++++ b/src/exprtest/_cyclotomic.py
+@@ -5,7 +5,6 @@ from __future__ import annotations
+ from dataclasses import dataclass
+ from functools import lru_cache
+ from math import gcd
+-from typing import Optional
+ 
+ import sympy as sp
+ from sympy.polys.numberfields import to_number_field
+@@ -40,14 +39,14 @@ def _lcm(a: int, b: int) -> int:
+     return abs(a * b) // gcd(a, b) if a and b else 0
+ 
+ 
+-def _pi_ratio(arg: sp.Expr) -> Optional[sp.Rational]:
++def _pi_ratio(arg: sp.Expr) -> sp.Rational | None:
+     coeff = arg.coeff(sp.pi)
+     if arg == coeff * sp.pi and coeff.is_Rational:
+         return sp.Rational(coeff)
+     return None
+ 
+ 
+-def _root_ratio(arg: sp.Expr) -> Optional[sp.Rational]:
++def _root_ratio(arg: sp.Expr) -> sp.Rational | None:
+     coeff = arg.coeff(sp.pi)
+     if arg != coeff * sp.pi:
+         return None
+@@ -55,7 +54,7 @@ def _root_ratio(arg: sp.Expr) -> Optional[sp.Rational]:
+     return sp.Rational(ratio) if ratio.is_Rational else None
+ 
+ 
+-def _needed_order(term: sp.Expr) -> Optional[int]:
++def _needed_order(term: sp.Expr) -> int | None:
+     """Return a common root-of-unity order, or ``None`` if unsupported."""
+     order = 4
+     for node in sp.preorder_traversal(term):
+@@ -78,7 +77,7 @@ def _reduce(value: sp.Expr, var: sp.Symbol, mod: sp.Poly) -> sp.Expr:
+     return sp.Poly(value, var, domain=sp.QQ).rem(mod).as_expr()
+ 
+ 
+-def _inverse(value: sp.Expr, var: sp.Symbol, mod: sp.Poly) -> Optional[sp.Expr]:
++def _inverse(value: sp.Expr, var: sp.Symbol, mod: sp.Poly) -> sp.Expr | None:
+     try:
+         inv = sp.invert(sp.Poly(value, var, domain=sp.QQ), mod)
+         return _reduce(inv.as_expr(), var, mod)
+@@ -86,7 +85,7 @@ def _inverse(value: sp.Expr, var: sp.Symbol, mod: sp.Poly) -> Optional[sp.Expr]:
+         return None
+ 
+ 
+-def _power(value: sp.Expr, power: int, var: sp.Symbol, mod: sp.Poly) -> Optional[sp.Expr]:
++def _power(value: sp.Expr, power: int, var: sp.Symbol, mod: sp.Poly) -> sp.Expr | None:
+     if power < 0:
+         value = _inverse(value, var, mod)
+         if value is None:
+@@ -107,7 +106,7 @@ def _root_power(k: int, order: int, var: sp.Symbol, mod: sp.Poly) -> sp.Expr:
+     return _power(var, k % order, var, mod) or sp.Integer(0)
+ 
+ 
+-def _trig_value(term: sp.Expr, order: int, var: sp.Symbol, mod: sp.Poly) -> Optional[sp.Expr]:
++def _trig_value(term: sp.Expr, order: int, var: sp.Symbol, mod: sp.Poly) -> sp.Expr | None:
+     ratio = _pi_ratio(term.args[0])
+     if ratio is None:
+         return None
+@@ -133,7 +132,7 @@ def _trig_value(term: sp.Expr, order: int, var: sp.Symbol, mod: sp.Poly) -> Opti
+     return None
+ 
+ 
+-def _eval(term: sp.Expr, order: int, var: sp.Symbol, mod: sp.Poly) -> Optional[sp.Expr]:
++def _eval(term: sp.Expr, order: int, var: sp.Symbol, mod: sp.Poly) -> sp.Expr | None:
+     if term.is_Rational:
+         return term
+     if term == sp.I:
+@@ -173,7 +172,7 @@ def _eval(term: sp.Expr, order: int, var: sp.Symbol, mod: sp.Poly) -> Optional[s
+ 
+ 
+ @lru_cache(maxsize=1024)
+-def _form_cached(term: sp.Expr, limit: int) -> Optional[CyclotomicForm]:
++def _form_cached(term: sp.Expr, limit: int) -> CyclotomicForm | None:
+     order = _needed_order(term)
+     if order is None or order > limit:
+         return None
+@@ -190,7 +189,7 @@ def _form_cached(term: sp.Expr, limit: int) -> Optional[CyclotomicForm]:
+         return None
+ 
+ 
+-def cyclotomic_form(term: sp.Expr, order_limit: Optional[int] = None) -> Optional[CyclotomicForm]:
++def cyclotomic_form(term: sp.Expr, order_limit: int | None = None) -> CyclotomicForm | None:
+     """Represent a supported exact constant in a cyclotomic quotient field."""
+     budget = ExactBudget()
+     term = sp.sympify(term)
+@@ -220,7 +219,7 @@ def cyclotomic_zero_test(term: sp.Expr) -> ZeroClassification:
+     )
+ 
+ 
+-def cyclotomic_sign(term: sp.Expr) -> Optional[int]:
++def cyclotomic_sign(term: sp.Expr) -> int | None:
+     """Return the exact sign of a supported real cyclotomic constant."""
+     term = sp.sympify(term)
+     if term.is_real is not True:
+diff --git a/src/exprtest/_defined.py b/src/exprtest/_defined.py
+index 6dcf598..f249d51 100644
+--- a/src/exprtest/_defined.py
++++ b/src/exprtest/_defined.py
+@@ -3,7 +3,7 @@
+ from __future__ import annotations
+ 
+ from collections.abc import MutableMapping
+-from typing import TYPE_CHECKING, Optional
++from typing import TYPE_CHECKING
+ 
+ import sympy as sp
+ 
+@@ -18,7 +18,7 @@ def _memo_key(term: sp.Expr, assumptions) -> tuple:
+     return (sp.sympify(term), assumptions)
+ 
+ 
+-def quick_defined(term: sp.Expr, assumptions=True) -> Optional[bool]:
++def quick_defined(term: sp.Expr, assumptions=True) -> bool | None:
+     """Return whether ``term`` is defined and finite when cheaply decidable."""
+     term = sp.sympify(term)
+     assumptions = normalize_assumptions(assumptions)
+@@ -96,8 +96,8 @@ def _square_nonnegative(term: sp.Expr, assumptions, memo, context) -> tuple[bool
+     return False, False
+ 
+ 
+-def quick_defined_nonzero(term: sp.Expr, assumptions=True, memo: Optional[MutableMapping] = None,
+-                          *, context: Optional[OracleMemo] = None) -> Optional[bool]:
++def quick_defined_nonzero(term: sp.Expr, assumptions=True, memo: MutableMapping | None = None,
++                          *, context: OracleMemo | None = None) -> bool | None:
+     """Return True only when finiteness and nonvanishing are cheaply proved."""
+     term = sp.sympify(term)
+     assumptions = normalize_assumptions(assumptions)
+diff --git a/src/exprtest/_domains.py b/src/exprtest/_domains.py
+index d351794..af8a30f 100644
+--- a/src/exprtest/_domains.py
++++ b/src/exprtest/_domains.py
+@@ -4,7 +4,6 @@ from __future__ import annotations
+ 
+ from dataclasses import dataclass
+ from enum import Enum
+-from typing import Optional
+ 
+ import sympy as sp
+ 
+@@ -29,19 +28,19 @@ class NumberKind(Enum):
+ class DomainFacts:
+     """Cheap theorem/property facts used by membership and branch decisions."""
+ 
+-    integer: Optional[bool] = None
+-    rational: Optional[bool] = None
+-    algebraic: Optional[bool] = None
+-    real: Optional[bool] = None
+-    complex: Optional[bool] = None
+-    positive: Optional[bool] = None
+-    negative: Optional[bool] = None
+-    nonzero: Optional[bool] = None
+-    finite: Optional[bool] = None
+-    root_of_unity: Optional[bool] = None
++    integer: bool | None = None
++    rational: bool | None = None
++    algebraic: bool | None = None
++    real: bool | None = None
++    complex: bool | None = None
++    positive: bool | None = None
++    negative: bool | None = None
++    nonzero: bool | None = None
++    finite: bool | None = None
++    root_of_unity: bool | None = None
+ 
+ 
+-def _ask(prop, assumptions) -> Optional[bool]:
++def _ask(prop, assumptions) -> bool | None:
+     facts = assumption_facts(assumptions)
+     try:
+         if facts:
+@@ -171,7 +170,7 @@ def _rat_parts(term: sp.Expr, atom: sp.Expr, var: sp.Symbol,
+ 
+ 
+ def rational_transcendental_kind(term: sp.Expr,
+-                                  budget: Optional[ExactBudget] = None) -> NumberKind:
++                                  budget: ExactBudget | None = None) -> NumberKind:
+     """Classify a rational function of one known transcendental constant.
+ 
+     A nonzero polynomial with algebraic coefficients cannot vanish at a
+@@ -220,7 +219,7 @@ def rational_transcendental_kind(term: sp.Expr,
+         return NumberKind.UNKNOWN
+ 
+ 
+-def number_kind(term: sp.Expr, budget: Optional[ExactBudget] = None) -> NumberKind:
++def number_kind(term: sp.Expr, budget: ExactBudget | None = None) -> NumberKind:
+     """Cheap sufficient algebraic/transcendental classifier."""
+     budget = budget or ExactBudget()
+     term = sp.sympify(term)
+@@ -266,7 +265,7 @@ def number_kind(term: sp.Expr, budget: Optional[ExactBudget] = None) -> NumberKi
+     return NumberKind.UNKNOWN
+ 
+ 
+-def _root_unity(term: sp.Expr) -> Optional[bool]:
++def _root_unity(term: sp.Expr) -> bool | None:
+     if term in (sp.Integer(1), sp.Integer(-1), sp.I, -sp.I):
+         return True
+     if term.func is sp.exp and len(term.args) == 1:
+@@ -280,7 +279,7 @@ def _root_unity(term: sp.Expr) -> Optional[bool]:
+ 
+ 
+ def domain_facts(term: sp.Expr, assumptions=True,
+-                 budget: Optional[ExactBudget] = None) -> DomainFacts:
++                 budget: ExactBudget | None = None) -> DomainFacts:
+     """Collect inexpensive exact domain/sign facts without simplification."""
+     budget = budget or ExactBudget()
+     assumptions = normalize_assumptions(assumptions)
+@@ -314,7 +313,7 @@ def domain_facts(term: sp.Expr, assumptions=True,
+ 
+ 
+ 
+-def is_integer(term: sp.Expr, assumptions=True) -> Optional[bool]:
++def is_integer(term: sp.Expr, assumptions=True) -> bool | None:
+     """Return whether *term* is provably an integer.
+ 
+     The result is ``True`` or ``False`` when the inexpensive domain engine can
+@@ -323,22 +322,22 @@ def is_integer(term: sp.Expr, assumptions=True) -> Optional[bool]:
+     return domain_facts(term, assumptions).integer
+ 
+ 
+-def is_rational(term: sp.Expr, assumptions=True) -> Optional[bool]:
++def is_rational(term: sp.Expr, assumptions=True) -> bool | None:
+     """Return whether *term* is provably rational, or ``None`` if unknown."""
+     return domain_facts(term, assumptions).rational
+ 
+ 
+-def is_real(term: sp.Expr, assumptions=True) -> Optional[bool]:
++def is_real(term: sp.Expr, assumptions=True) -> bool | None:
+     """Return whether *term* is provably real, or ``None`` if unknown."""
+     return domain_facts(term, assumptions).real
+ 
+ 
+-def is_algebraic(term: sp.Expr, assumptions=True) -> Optional[bool]:
++def is_algebraic(term: sp.Expr, assumptions=True) -> bool | None:
+     """Return whether *term* is provably algebraic, or ``None`` if unknown."""
+     return domain_facts(term, assumptions).algebraic
+ 
+ 
+-def is_prime(term: sp.Expr, assumptions=True) -> Optional[bool]:
++def is_prime(term: sp.Expr, assumptions=True) -> bool | None:
+     """Return whether *term* is provably a positive prime integer.
+ 
+     Exact integer inputs use SymPy's deterministic integer primality test.
+@@ -356,7 +355,7 @@ def is_prime(term: sp.Expr, assumptions=True) -> Optional[bool]:
+     return ans
+ 
+ 
+-def _direct_member(term: sp.Expr, set_, assumptions) -> Optional[bool]:
++def _direct_member(term: sp.Expr, set_, assumptions) -> bool | None:
+     facts = domain_facts(term, assumptions)
+     if set_ == sp.S.Integers:
+         return facts.integer
+diff --git a/src/exprtest/_exact_constants.py b/src/exprtest/_exact_constants.py
+index e703934..4b2d82a 100644
+--- a/src/exprtest/_exact_constants.py
++++ b/src/exprtest/_exact_constants.py
+@@ -3,7 +3,6 @@
+ from __future__ import annotations
+ 
+ from dataclasses import dataclass
+-from typing import Optional
+ 
+ import sympy as sp
+ from sympy.polys.numberfields import to_number_field
+@@ -37,7 +36,7 @@ def _field_zero(value) -> bool:
+     return value == 0
+ 
+ 
+-def algebraic_sign(term: sp.Expr) -> Optional[int]:
++def algebraic_sign(term: sp.Expr) -> int | None:
+     """Return -1, 0, or 1 for a real algebraic constant, else ``None``."""
+     if not stage_allowed(sp.sympify(term), "minpoly"):
+         return None
+@@ -72,7 +71,7 @@ def algebraic_sign(term: sp.Expr) -> Optional[int]:
+     return None
+ 
+ 
+-def compare_algebraic(left: sp.Expr, right: sp.Expr) -> Optional[AlgebraicOrder]:
++def compare_algebraic(left: sp.Expr, right: sp.Expr) -> AlgebraicOrder | None:
+     """Compare two real algebraic constants exactly when possible."""
+     if not within_budget(sp.Add(sp.sympify(left), -sp.sympify(right), evaluate=False)):
+         return None
+@@ -84,14 +83,14 @@ def compare_algebraic(left: sp.Expr, right: sp.Expr) -> Optional[AlgebraicOrder]
+     return AlgebraicOrder(sign, sp.cancel(diff))
+ 
+ 
+-def _rational_pi(arg: sp.Expr) -> Optional[sp.Rational]:
++def _rational_pi(arg: sp.Expr) -> sp.Rational | None:
+     coeff = arg.coeff(sp.pi)
+     if arg == coeff * sp.pi and coeff.is_Rational:
+         return sp.Rational(coeff)
+     return None
+ 
+ 
+-def reduce_exact_trig(term: sp.Expr, degree_limit: Optional[int] = None) -> sp.Expr:
++def reduce_exact_trig(term: sp.Expr, degree_limit: int | None = None) -> sp.Expr:
+     """Convert rational-angle trig constants to exact algebraic values.
+ 
+     A cyclotomic quotient reduction is attempted first so identities among
+@@ -130,7 +129,7 @@ def reduce_exact_trig(term: sp.Expr, degree_limit: Optional[int] = None) -> sp.E
+     return term.xreplace(repl)
+ 
+ 
+-def canonical_algebraic(term: sp.Expr, degree_limit: Optional[int] = None) -> sp.Expr:
++def canonical_algebraic(term: sp.Expr, degree_limit: int | None = None) -> sp.Expr:
+     """Return a compact exact representation of a closed algebraic constant."""
+     if not stage_allowed(sp.sympify(term), "minpoly"):
+         return sp.sympify(term)
+diff --git a/src/exprtest/_exp_independence.py b/src/exprtest/_exp_independence.py
+index 1921e80..9bb804d 100644
+--- a/src/exprtest/_exp_independence.py
++++ b/src/exprtest/_exp_independence.py
+@@ -3,7 +3,6 @@
+ from __future__ import annotations
+ 
+ from functools import lru_cache
+-from typing import Optional
+ 
+ import sympy as sp
+ 
+@@ -20,7 +19,7 @@ def _alg_coeff(term: sp.Expr) -> bool:
+ 
+ 
+ @lru_cache(maxsize=cfg.EXACT_BOUND_CACHE_SIZE)
+-def _algebraic_nonzero(term: sp.Expr) -> Optional[bool]:
++def _algebraic_nonzero(term: sp.Expr) -> bool | None:
+     """Prove an algebraic exponent difference nonzero with a cheap-first path."""
+     term = sp.sympify(term)
+     if term.is_Rational:
+@@ -74,7 +73,7 @@ def _exp_term(term: sp.Expr):
+     return None
+ 
+ 
+-def exponential_independence_nonzero(term: sp.Expr) -> Optional[bool]:
++def exponential_independence_nonzero(term: sp.Expr) -> bool | None:
+     """Prove a small algebraic linear combination of exponentials nonzero.
+ 
+     Lindemann--Weierstrass implies that exponentials of distinct algebraic
+diff --git a/src/exprtest/_fast.py b/src/exprtest/_fast.py
+index db30012..7da39f2 100644
+--- a/src/exprtest/_fast.py
++++ b/src/exprtest/_fast.py
+@@ -3,14 +3,13 @@
+ from __future__ import annotations
+ 
+ from functools import lru_cache
+-from typing import Optional
+ 
+ import sympy as sp
+ 
+ from ._cost import within_budget
+ 
+ 
+-def literal_number_zero(term: sp.Expr) -> Optional[bool]:
++def literal_number_zero(term: sp.Expr) -> bool | None:
+     """Classify finite numeric literals by their represented value.
+ 
+     Exact SymPy numbers and finite ``Float`` literals are safe to classify
+diff --git a/src/exprtest/_finite_field.py b/src/exprtest/_finite_field.py
+index 820d934..a3500bb 100644
+--- a/src/exprtest/_finite_field.py
++++ b/src/exprtest/_finite_field.py
+@@ -5,7 +5,6 @@ from __future__ import annotations
+ import math
+ import random
+ from dataclasses import dataclass
+-from typing import Optional
+ 
+ try:
+     import flint
+@@ -177,7 +176,7 @@ def finite_field_identity_test(
+     expr: sp.Expr,
+     symbols,
+     target_error: float = cfg.SZ_TARGET_FALSE_POSITIVE,
+-    rng: Optional[random.Random] = None,
++    rng: random.Random | None = None,
+ ) -> ZeroClassification:
+     """Test a rational-function identity without symbolic common denominators.
+ 
+diff --git a/src/exprtest/_function_facts.py b/src/exprtest/_function_facts.py
+index 6c5d497..5819bcb 100644
+--- a/src/exprtest/_function_facts.py
++++ b/src/exprtest/_function_facts.py
+@@ -7,8 +7,6 @@ and inexpensive to check.
+ 
+ from __future__ import annotations
+ 
+-from typing import Optional
+-
+ import sympy as sp
+ 
+ from ._assumptions import (
+@@ -28,32 +26,32 @@ PROPERTY_FUNCS = frozenset({
+ })
+ 
+ 
+-def _and(*vals: Optional[bool]) -> Optional[bool]:
++def _and(*vals: bool | None) -> bool | None:
+     if any(v is False for v in vals):
+         return False
+     return True if vals and all(v is True for v in vals) else None
+ 
+ 
+-def _or(*vals: Optional[bool]) -> Optional[bool]:
++def _or(*vals: bool | None) -> bool | None:
+     if any(v is True for v in vals):
+         return True
+     return False if vals and all(v is False for v in vals) else None
+ 
+ 
+-def _not(value: Optional[bool]) -> Optional[bool]:
++def _not(value: bool | None) -> bool | None:
+     return None if value is None else not value
+ 
+ 
+-def _proved(value: Optional[bool]) -> Optional[bool]:
++def _proved(value: bool | None) -> bool | None:
+     """Convert a sufficient-condition result into one-sided proof evidence."""
+     return True if value is True else None
+ 
+ 
+-def _interval(arg, lo, hi, assumptions) -> Optional[bool]:
++def _interval(arg, lo, hi, assumptions) -> bool | None:
+     return _and(is_nonnegative(arg - lo, assumptions), is_nonnegative(hi - arg, assumptions))
+ 
+ 
+-def _domain_unary(term: sp.Expr, assumptions) -> Optional[bool]:
++def _domain_unary(term: sp.Expr, assumptions) -> bool | None:
+     """Return the reviewed complex-domain condition for reviewed functions."""
+     if len(term.args) != 1:
+         return None
+@@ -80,7 +78,7 @@ def _domain_unary(term: sp.Expr, assumptions) -> Optional[bool]:
+     return None
+ 
+ 
+-def function_defined(term: sp.Expr, assumptions=True) -> Optional[bool]:
++def function_defined(term: sp.Expr, assumptions=True) -> bool | None:
+     """Return a reviewed function-domain decision, ignoring child definedness."""
+     term = sp.sympify(term)
+     if term.func not in PROPERTY_FUNCS:
+@@ -88,7 +86,7 @@ def function_defined(term: sp.Expr, assumptions=True) -> Optional[bool]:
+     return _domain_unary(term, assumptions)
+ 
+ 
+-def function_property(term: sp.Expr, prop: str, assumptions=True) -> Optional[bool]:
++def function_property(term: sp.Expr, prop: str, assumptions=True) -> bool | None:
+     """Evaluate a reviewed function property of a SymPy function call.
+ 
+     Supported properties are ``integer``, ``real``, ``positive``, ``negative``,
+@@ -228,7 +226,7 @@ def function_property(term: sp.Expr, prop: str, assumptions=True) -> Optional[bo
+     return None
+ 
+ 
+-def function_nonzero(term: sp.Expr, assumptions=True) -> Optional[bool]:
++def function_nonzero(term: sp.Expr, assumptions=True) -> bool | None:
+     """Return a function-fact nonzero proof from reviewed sign properties."""
+     if function_defined(term, assumptions) is not True:
+         return None
+diff --git a/src/exprtest/_nonzero.py b/src/exprtest/_nonzero.py
+index 7b96f9e..78d310b 100644
+--- a/src/exprtest/_nonzero.py
++++ b/src/exprtest/_nonzero.py
+@@ -4,7 +4,7 @@ from __future__ import annotations
+ 
+ from collections.abc import MutableMapping
+ from functools import lru_cache
+-from typing import TYPE_CHECKING, Optional
++from typing import TYPE_CHECKING
+ 
+ import sympy as sp
+ 
+@@ -29,7 +29,7 @@ if TYPE_CHECKING:
+     from ._call_memo import OracleMemo
+ 
+ 
+-def _ask_nonzero(term: sp.Expr, assumptions) -> Optional[bool]:
++def _ask_nonzero(term: sp.Expr, assumptions) -> bool | None:
+     try:
+         facts = assumption_facts(assumptions)
+         if facts:
+@@ -42,7 +42,7 @@ def _ask_nonzero(term: sp.Expr, assumptions) -> Optional[bool]:
+         return None
+ 
+ 
+-def _gamma_nonzero(term: sp.Expr) -> Optional[bool]:
++def _gamma_nonzero(term: sp.Expr) -> bool | None:
+     if term.func is not sp.gamma or len(term.args) != 1:
+         return None
+     arg = term.args[0]
+@@ -56,7 +56,7 @@ def _gamma_nonzero(term: sp.Expr) -> Optional[bool]:
+ 
+ 
+ @lru_cache(maxsize=cfg.EXACT_NONZERO_CACHE_SIZE)
+-def _closed_nonzero(term: sp.Expr) -> Optional[bool]:
++def _closed_nonzero(term: sp.Expr) -> bool | None:
+     """Cached closed-expression portion of :func:`quick_nonzero`."""
+     term = sp.sympify(term)
+     features = expression_features(term)
+@@ -110,10 +110,10 @@ def _closed_nonzero(term: sp.Expr) -> Optional[bool]:
+ def quick_nonzero(
+     term: sp.Expr,
+     assumptions=True,
+-    memo: Optional[MutableMapping] = None,
++    memo: MutableMapping | None = None,
+     *,
+-    context: Optional[OracleMemo] = None,
+-) -> Optional[bool]:
++    context: OracleMemo | None = None,
++) -> bool | None:
+     """Return a proof that ``term != 0`` when one is structurally cheap.
+ 
+     ``True`` means nonzero is proved, ``False`` means zero is proved, and
+diff --git a/src/exprtest/_numeric.py b/src/exprtest/_numeric.py
+index 627488b..82590ba 100644
+--- a/src/exprtest/_numeric.py
++++ b/src/exprtest/_numeric.py
+@@ -4,7 +4,6 @@ from __future__ import annotations
+ 
+ import random
+ from contextlib import contextmanager
+-from typing import Optional
+ 
+ try:
+     import flint
+@@ -143,7 +142,7 @@ def _precision_from_expr(expr: sp.Expr) -> int:
+ 
+ 
+ def _next_precision(prec: int, cur_log2_rad: float,
+-                    prev_prec: Optional[int], prev_log2_rad: Optional[float],
++                    prev_prec: int | None, prev_log2_rad: float | None,
+                     lower=None) -> int:
+     """Predict the next useful Arb precision from observed enclosure shrinkage."""
+     default = min(cfg.MAX_PREC_BITS + 1, max(prec + cfg.ARB_MIN_STEP_BITS, prec * 2))
+@@ -173,7 +172,7 @@ def _next_precision(prec: int, cur_log2_rad: float,
+     factor = 2 if slope >= cfg.MIN_SHRINK_FRACTION else cfg.ARB_MAX_GROWTH_FACTOR
+     return min(cfg.MAX_PREC_BITS + 1, max(prec + cfg.ARB_MIN_STEP_BITS, prec * factor))
+ 
+-def adaptive_precision_ball_test(expr: sp.Expr, subs: Optional[dict] = None,
++def adaptive_precision_ball_test(expr: sp.Expr, subs: dict | None = None,
+                                  separation_bound=None) -> ZeroClassification:
+     """Escalate Arb precision and record quantitative zero-like evidence.
+ 
+@@ -194,8 +193,8 @@ def adaptive_precision_ball_test(expr: sp.Expr, subs: Optional[dict] = None,
+     structural_prec = _precision_from_expr(expr)
+     lower_prec = _precision_from_lower(separation_bound) if separation_bound is not None else cfg.INITIAL_PREC_BITS
+     prec = min(cfg.ARB_HINT_MAX_START_BITS, max(structural_prec, lower_prec))
+-    prev_log2_rad: Optional[float] = None
+-    prev_prec: Optional[int] = None
++    prev_log2_rad: float | None = None
++    prev_prec: int | None = None
+     consecutive_shrinks = 0
+     history = []
+ 
+@@ -297,8 +296,8 @@ def random_witness_nonzero_check(
+     prec_bits: int = cfg.WITNESS_PREC_BITS,
+     num_points: int = cfg.NUM_WITNESS_POINTS,
+     assumptions=True,
+-    rng: Optional[random.Random] = None,
+-) -> Optional[ZeroClassification]:
++    rng: random.Random | None = None,
++) -> ZeroClassification | None:
+     """Seek rigorous nonzero witness points that satisfy caller assumptions."""
+     if flint is None:
+         return None
+diff --git a/src/exprtest/_profile.py b/src/exprtest/_profile.py
+index 064164c..ff68df6 100644
+--- a/src/exprtest/_profile.py
++++ b/src/exprtest/_profile.py
+@@ -6,9 +6,10 @@ therefore pay-for-play and intended for benchmarks, tuning, and diagnostics.
+ 
+ from __future__ import annotations
+ 
++from collections.abc import Callable
+ from dataclasses import dataclass
+ from time import perf_counter
+-from typing import Callable, Optional, TypeVar
++from typing import TypeVar
+ 
+ from ._result import ZeroClassification
+ 
+@@ -34,7 +35,7 @@ class ZeroTestProfile:
+     timing records.
+     """
+ 
+-    result: Optional[bool]
++    result: bool | None
+     classification: ZeroClassification
+     stages: tuple[StageTiming, ...]
+     total_seconds: float
+@@ -55,7 +56,7 @@ class ZeroTestProfile:
+         return self.classification.detail
+ 
+     @property
+-    def evidence(self) -> Optional[str]:
++    def evidence(self) -> str | None:
+         """Optional compact description of the evidence used."""
+         return self.classification.evidence
+ 
+@@ -75,7 +76,7 @@ class StageProfiler:
+         self._start = perf_counter()
+ 
+     def run(self, stage: str, func: Callable[[], T],
+-            outcome: Optional[Callable[[T], str]] = None) -> T:
++            outcome: Callable[[T], str] | None = None) -> T:
+         start = perf_counter()
+         value = func()
+         elapsed = perf_counter() - start
+@@ -87,7 +88,7 @@ class StageProfiler:
+         self._stages.append(StageTiming(stage, 0.0, outcome, detail))
+ 
+     def finish(
+-        self, result: Optional[bool], classification: ZeroClassification
++        self, result: bool | None, classification: ZeroClassification
+     ) -> ZeroTestProfile:
+         """Finalize timings together with the oracle's proof classification."""
+         return ZeroTestProfile(
+diff --git a/src/exprtest/_pslq.py b/src/exprtest/_pslq.py
+index 2afbde7..6fffbda 100644
+--- a/src/exprtest/_pslq.py
++++ b/src/exprtest/_pslq.py
+@@ -2,9 +2,9 @@
+ 
+ from __future__ import annotations
+ 
++from collections.abc import Callable
+ from dataclasses import dataclass
+ from math import gcd, lcm
+-from typing import Callable, Optional
+ 
+ import mpmath
+ import sympy as sp
+@@ -55,8 +55,8 @@ def _linear_parts(term: sp.Expr, budget: ExactBudget):
+ 
+ 
+ def pslq_zero_relation(term: sp.Expr,
+-                       verifier: Callable[[sp.Expr], Optional[bool]],
+-                       budget: Optional[ExactBudget] = None) -> Optional[PSLQRelation]:
++                       verifier: Callable[[sp.Expr], bool | None],
++                       budget: ExactBudget | None = None) -> PSLQRelation | None:
+     """Find a candidate additive relation and require exact verification.
+ 
+     PSLQ only selects a relation worth checking. The returned object exists
+diff --git a/src/exprtest/_result.py b/src/exprtest/_result.py
+index 94c1df0..9997ee6 100644
+--- a/src/exprtest/_result.py
++++ b/src/exprtest/_result.py
+@@ -3,7 +3,6 @@ from __future__ import annotations
+ 
+ from dataclasses import dataclass
+ from enum import Enum
+-from typing import Optional
+ 
+ 
+ class Verdict(Enum):
+@@ -27,15 +26,15 @@ class ZeroClassification:
+     verdict: Verdict
+     method: str
+     detail: str = ""
+-    precision_bits: Optional[int] = None
+-    trials: Optional[int] = None
+-    evidence: Optional[str] = None
+-    error_bound: Optional[float] = None
+-    requested_error: Optional[float] = None
++    precision_bits: int | None = None
++    trials: int | None = None
++    evidence: str | None = None
++    error_bound: float | None = None
++    requested_error: float | None = None
+     enclosure_history: tuple[str, ...] = ()
+ 
+     @property
+-    def is_zero(self) -> Optional[bool]:
++    def is_zero(self) -> bool | None:
+         if self.verdict is Verdict.ZERO_PROVEN:
+             return True
+         if self.verdict in (Verdict.NONZERO_PROVEN, Verdict.NONZERO_LIKELY):
+diff --git a/src/exprtest/_sqrt_sum.py b/src/exprtest/_sqrt_sum.py
+index 9b02b0c..75661ce 100644
+--- a/src/exprtest/_sqrt_sum.py
++++ b/src/exprtest/_sqrt_sum.py
+@@ -3,7 +3,6 @@
+ from __future__ import annotations
+ 
+ from functools import lru_cache
+-from typing import Optional
+ 
+ import sympy as sp
+ 
+@@ -13,7 +12,7 @@ from ._result import Verdict, ZeroClassification
+ 
+ 
+ @lru_cache(maxsize=cfg.NORMAL_FORM_CACHE_SIZE)
+-def _squarefree_int(value: int) -> Optional[tuple[sp.Integer, int]]:
++def _squarefree_int(value: int) -> tuple[sp.Integer, int] | None:
+     """Return ``(outside, squarefree_part)`` for a small positive integer."""
+     if value <= 0 or value.bit_length() > cfg.SQRT_SUM_RAD_BITS:
+         return None
+@@ -30,7 +29,7 @@ def _squarefree_int(value: int) -> Optional[tuple[sp.Integer, int]]:
+     return sp.Integer(outside), squarefree
+ 
+ 
+-def _sqrt_term(term: sp.Expr) -> Optional[tuple[int, sp.Rational]]:
++def _sqrt_term(term: sp.Expr) -> tuple[int, sp.Rational] | None:
+     """Return a squarefree radical key and rational coefficient."""
+     term = sp.sympify(term)
+     if term.is_Rational:
+diff --git a/src/exprtest/_timing.py b/src/exprtest/_timing.py
+index 7c34968..084c622 100644
+--- a/src/exprtest/_timing.py
++++ b/src/exprtest/_timing.py
+@@ -6,7 +6,6 @@ import signal
+ import threading
+ import time
+ from contextlib import contextmanager
+-from typing import Optional
+ 
+ 
+ class TimeoutError_(BaseException):
+@@ -24,7 +23,7 @@ def _alarm_available() -> bool:
+ 
+ 
+ @contextmanager
+-def bounded_time_context(seconds: Optional[float]):
++def bounded_time_context(seconds: float | None):
+     """Bound a block with SIGALRM when the platform/thread supports it.
+ 
+     On platforms without ``SIGALRM`` (notably Windows), and in non-main
+diff --git a/src/exprtest/_transcendental.py b/src/exprtest/_transcendental.py
+index e2dc111..622ece9 100644
+--- a/src/exprtest/_transcendental.py
++++ b/src/exprtest/_transcendental.py
+@@ -9,7 +9,6 @@ unambiguous.
+ from __future__ import annotations
+ 
+ from math import lcm
+-from typing import Optional
+ 
+ import sympy as sp
+ 
+@@ -23,7 +22,7 @@ from ._negative_cache import log_rel_inapplicable
+ from ._result import Verdict, ZeroClassification
+ 
+ 
+-def _ask(prop, assumptions) -> Optional[bool]:
++def _ask(prop, assumptions) -> bool | None:
+     facts = assumption_facts(assumptions)
+     try:
+         if facts:
+@@ -85,7 +84,7 @@ def normalize_logs(term: sp.Expr, assumptions=True) -> sp.Expr:
+     return current
+ 
+ 
+-def _log_term(term: sp.Expr, assumptions) -> Optional[tuple[sp.Rational, sp.Expr]]:
++def _log_term(term: sp.Expr, assumptions) -> tuple[sp.Rational, sp.Expr] | None:
+     """Extract ``q*log(a)`` with rational q and positive exact algebraic a."""
+     coeff, rest = term.as_coeff_Mul(rational=True)
+     if rest.func is not sp.log or len(rest.args) != 1 or not coeff.is_Rational:
+@@ -330,7 +329,7 @@ def normalize_exp_log(term: sp.Expr, assumptions=True) -> sp.Expr:
+     return current
+ 
+ 
+-def _periodic_zero(term: sp.Expr, assumptions) -> Optional[bool]:
++def _periodic_zero(term: sp.Expr, assumptions) -> bool | None:
+     if len(term.args) != 1:
+         return None
+     arg = term.args[0]
+diff --git a/src/exprtest/core.py b/src/exprtest/core.py
+index 818bf5d..32fa770 100644
+--- a/src/exprtest/core.py
++++ b/src/exprtest/core.py
+@@ -3,7 +3,6 @@
+ from __future__ import annotations
+ 
+ import random
+-from typing import Optional
+ 
+ import sympy as sp
+ 
+@@ -49,7 +48,7 @@ def _fast_unknown(detail: str) -> ZeroClassification:
+     return ZeroClassification(Verdict.UNKNOWN, "fast-oracle", detail=detail)
+ 
+ 
+-def _verify_pslq(term: sp.Expr, assumptions) -> Optional[bool]:
++def _verify_pslq(term: sp.Expr, assumptions) -> bool | None:
+     """Verify a PSLQ candidate using only independent exact proof stages."""
+     term = quick_reduce(sp.sympify(term))
+     if term == 0 or term.is_zero is True:
+@@ -69,7 +68,7 @@ def _verify_pslq(term: sp.Expr, assumptions) -> Optional[bool]:
+     return True if alg is not None and alg.verdict is Verdict.ZERO_PROVEN else None
+ 
+ 
+-def _cheap_zero_property(term: sp.Expr, features: Optional[ExprFeatures] = None) -> Optional[bool]:
++def _cheap_zero_property(term: sp.Expr, features: ExprFeatures | None = None) -> bool | None:
+     """Use SymPy's zero property only on structurally tiny expressions."""
+     features = features or expression_features(term)
+     if features.has_float or features.has_nonfinite:
+@@ -84,7 +83,7 @@ def _cheap_zero_property(term: sp.Expr, features: Optional[ExprFeatures] = None)
+     return bool(value)
+ 
+ 
+-def _stage_run(profiler: Optional[StageProfiler], stage: str, func, outcome=None):
++def _stage_run(profiler: StageProfiler | None, stage: str, func, outcome=None):
+     if profiler is None:
+         return func()
+     return profiler.run(stage, func, outcome)
+@@ -95,8 +94,8 @@ def _verdict_name(result: ZeroClassification) -> str:
+ 
+ 
+ def _fast_exact(term: sp.Expr, assumptions,
+-                profiler: Optional[StageProfiler] = None,
+-                memo: Optional[OracleMemo] = None) -> ZeroClassification:
++                profiler: StageProfiler | None = None,
++                memo: OracleMemo | None = None) -> ZeroClassification:
+     """Classify a closed exact expression without generic simplification."""
+     term = _stage_run(profiler, "quick-reduce", lambda: quick_reduce(term))
+     literal_zero = literal_number_zero(term)
+@@ -289,8 +288,8 @@ def _fast_exact(term: sp.Expr, assumptions,
+     return _fast_unknown("bounded exact and rigorous numeric stages were inconclusive")
+ 
+ def _fast_classify_uncached(term: sp.Expr, assumptions, rng: random.Random,
+-                            profiler: Optional[StageProfiler] = None,
+-                            memo: Optional[OracleMemo] = None) -> ZeroClassification:
++                            profiler: StageProfiler | None = None,
++                            memo: OracleMemo | None = None) -> ZeroClassification:
+     """Run the uncached bounded oracle after input normalization."""
+     if assumptions is sp.false:
+         return ZeroClassification(Verdict.UNKNOWN, "assumptions",
+@@ -379,8 +378,8 @@ def _fast_classify_uncached(term: sp.Expr, assumptions, rng: random.Random,
+ 
+ 
+ def zerotest(expr, assumptions=True, use_cache: bool = True, *,
+-             rng: Optional[random.Random] = None, seed: Optional[int] = None,
+-             confidence: str = "probable") -> Optional[bool]:
++             rng: random.Random | None = None, seed: int | None = None,
++             confidence: str = "probable") -> bool | None:
+     """Fast proof-oriented zero oracle returning ``True``, ``False``, or ``None``.
+ 
+     The normal oracle path never invokes ``sympy.simplify`` or the general
+@@ -413,8 +412,8 @@ def zerotest(expr, assumptions=True, use_cache: bool = True, *,
+ 
+ 
+ def profile_zerotest(expr, assumptions=True, *,
+-                     rng: Optional[random.Random] = None,
+-                     seed: Optional[int] = None,
++                     rng: random.Random | None = None,
++                     seed: int | None = None,
+                      confidence: str = "probable") -> ZeroTestProfile:
+     """Run the fast oracle with opt-in per-stage timings.
+ 

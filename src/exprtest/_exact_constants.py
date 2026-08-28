@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 import sympy as sp
 from sympy.polys.numberfields import to_number_field
@@ -37,7 +36,7 @@ def _field_zero(value) -> bool:
     return value == 0
 
 
-def algebraic_sign(term: sp.Expr) -> Optional[int]:
+def algebraic_sign(term: sp.Expr) -> int | None:
     """Return -1, 0, or 1 for a real algebraic constant, else ``None``."""
     if not stage_allowed(sp.sympify(term), "minpoly"):
         return None
@@ -72,7 +71,7 @@ def algebraic_sign(term: sp.Expr) -> Optional[int]:
     return None
 
 
-def compare_algebraic(left: sp.Expr, right: sp.Expr) -> Optional[AlgebraicOrder]:
+def compare_algebraic(left: sp.Expr, right: sp.Expr) -> AlgebraicOrder | None:
     """Compare two real algebraic constants exactly when possible."""
     if not within_budget(sp.Add(sp.sympify(left), -sp.sympify(right), evaluate=False)):
         return None
@@ -84,14 +83,14 @@ def compare_algebraic(left: sp.Expr, right: sp.Expr) -> Optional[AlgebraicOrder]
     return AlgebraicOrder(sign, sp.cancel(diff))
 
 
-def _rational_pi(arg: sp.Expr) -> Optional[sp.Rational]:
+def _rational_pi(arg: sp.Expr) -> sp.Rational | None:
     coeff = arg.coeff(sp.pi)
     if arg == coeff * sp.pi and coeff.is_Rational:
         return sp.Rational(coeff)
     return None
 
 
-def reduce_exact_trig(term: sp.Expr, degree_limit: Optional[int] = None) -> sp.Expr:
+def reduce_exact_trig(term: sp.Expr, degree_limit: int | None = None) -> sp.Expr:
     """Convert rational-angle trig constants to exact algebraic values.
 
     A cyclotomic quotient reduction is attempted first so identities among
@@ -130,7 +129,7 @@ def reduce_exact_trig(term: sp.Expr, degree_limit: Optional[int] = None) -> sp.E
     return term.xreplace(repl)
 
 
-def canonical_algebraic(term: sp.Expr, degree_limit: Optional[int] = None) -> sp.Expr:
+def canonical_algebraic(term: sp.Expr, degree_limit: int | None = None) -> sp.Expr:
     """Return a compact exact representation of a closed algebraic constant."""
     if not stage_allowed(sp.sympify(term), "minpoly"):
         return sp.sympify(term)
@@ -160,3 +159,4 @@ def canonical_algebraic(term: sp.Expr, degree_limit: Optional[int] = None) -> sp
         return value
     except EXACT_METHOD_ERRORS:
         return prepared
+

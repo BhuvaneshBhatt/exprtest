@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Optional
 
 import sympy as sp
 
@@ -25,7 +24,7 @@ class AlgebraicGap:
     """Certified lower bound for the magnitude of a nonzero algebraic value."""
 
     lower: sp.Expr
-    polynomial: Optional[sp.Poly]
+    polynomial: sp.Poly | None
     method: str = "reciprocal-cauchy"
 
 
@@ -47,19 +46,17 @@ def _ceil_root(value: sp.Rational, degree: int) -> sp.Integer:
     return sp.Integer(high)
 
 
-def _cauchy_gap(poly: sp.Poly) -> Optional[sp.Rational]:
+def _cauchy_gap(poly: sp.Poly) -> sp.Rational | None:
     coeffs = poly.all_coeffs()
     constant = coeffs[-1]
     if constant == 0:
         return None
-    ratio = max(
-        (abs(sp.Rational(value, constant)) for value in coeffs[:-1]),
-        default=sp.Integer(0),
-    )
+    ratio = max((abs(sp.Rational(value, constant)) for value in coeffs[:-1]),
+                default=sp.Integer(0))
     return sp.Rational(1, 1) / (1 + ratio)
 
 
-def _fujiwara_gap(poly: sp.Poly) -> Optional[sp.Rational]:
+def _fujiwara_gap(poly: sp.Poly) -> sp.Rational | None:
     """Rationalized reciprocal Fujiwara lower root bound."""
     coeffs = poly.all_coeffs()
     constant = coeffs[-1]
@@ -113,7 +110,7 @@ def _dyadic_root_upper(poly: sp.Poly) -> sp.Rational:
     return sp.Rational(high)
 
 
-def _dyadic_gap(poly: sp.Poly) -> Optional[sp.Rational]:
+def _dyadic_gap(poly: sp.Poly) -> sp.Rational | None:
     """Lower bound nonzero roots via a refined reciprocal root radius."""
     coeffs = poly.all_coeffs()
     if not coeffs or coeffs[-1] == 0:
@@ -125,18 +122,15 @@ def _dyadic_gap(poly: sp.Poly) -> Optional[sp.Rational]:
 
 
 @lru_cache(maxsize=cfg.EXACT_BOUND_CACHE_SIZE)
-def _poly_gap_cheap_cached(term: sp.Expr) -> Optional[AlgebraicGap]:
+def _poly_gap_cheap_cached(term: sp.Expr) -> AlgebraicGap | None:
     """Return the best inexpensive minimal-polynomial separation bound."""
     marker = sp.Dummy("z")
     try:
         poly = minpoly_for(term, marker).clear_denoms()[1]
-        bounds = [
-            ("reciprocal-cauchy", _cauchy_gap(poly)),
-            ("reciprocal-fujiwara", _fujiwara_gap(poly)),
-        ]
-        valid = [
-            (name, bound) for name, bound in bounds if bound is not None and bound > 0
-        ]
+        bounds = [("reciprocal-cauchy", _cauchy_gap(poly)),
+                  ("reciprocal-fujiwara", _fujiwara_gap(poly))]
+        valid = [(name, bound) for name, bound in bounds
+                 if bound is not None and bound > 0]
         if not valid:
             return None
         name, lower = max(valid, key=lambda item: item[1])
@@ -146,7 +140,7 @@ def _poly_gap_cheap_cached(term: sp.Expr) -> Optional[AlgebraicGap]:
 
 
 @lru_cache(maxsize=cfg.EXACT_BOUND_CACHE_SIZE)
-def _poly_gap_cached(term: sp.Expr) -> Optional[AlgebraicGap]:
+def _poly_gap_cached(term: sp.Expr) -> AlgebraicGap | None:
     """Refine a cheap bound only when a caller explicitly asks for strength."""
     cheap = _poly_gap_cheap_cached(term)
     if cheap is None:
@@ -178,9 +172,7 @@ def _root_upper(poly: sp.Poly) -> sp.Rational:
     return min(cauchy, sp.Rational(fujiwara))
 
 
-def _tree_upper(
-    term: sp.Expr, limits: dict[sp.Symbol, sp.Rational]
-) -> Optional[sp.Rational]:
+def _tree_upper(term: sp.Expr, limits: dict[sp.Symbol, sp.Rational]) -> sp.Rational | None:
     """Bound an expression tree over algebraic generators without expansion."""
     if term.is_Rational:
         return abs(sp.Rational(term))
@@ -205,24 +197,21 @@ def _tree_upper(
     return None
 
 
-def _poly_upper(
-    term: sp.Expr, vars_: tuple[sp.Symbol, ...], limits: tuple[sp.Rational, ...]
-) -> sp.Rational:
+def _poly_upper(term: sp.Expr, vars_: tuple[sp.Symbol, ...],
+                limits: tuple[sp.Rational, ...]) -> sp.Rational:
     """Exact L1 upper bound for a rational-coefficient polynomial."""
     poly = sp.Poly(term, *vars_, domain=sp.QQ)
     total = sp.Rational(0)
     for powers, coeff in poly.terms():
         size = abs(sp.Rational(coeff))
         for limit, power in zip(limits, powers):
-            size *= limit**power
+            size *= limit ** power
         total += size
     return total
 
 
 @lru_cache(maxsize=cfg.EXACT_BOUND_CACHE_SIZE)
-def _resultant_gap_cached(
-    term: sp.Expr, include_poly: bool = True
-) -> Optional[AlgebraicGap]:
+def _resultant_gap_cached(term: sp.Expr, include_poly: bool = True) -> AlgebraicGap | None:
     """Bound one conjugate using an iterated exact resultant product.
 
     For monic defining polynomials the iterated resultant is the product of
@@ -235,9 +224,7 @@ def _resultant_gap_cached(
     if model is None or not model.generators:
         return None
     degree_product = model.degree_product
-    if degree_product > cfg.ALG_RESULTANT_MAX_DEGREE or not stage_allowed(
-        term, "resultant"
-    ):
+    if degree_product > cfg.ALG_RESULTANT_MAX_DEGREE or not stage_allowed(term, "resultant"):
         return None
     if sp.count_ops(model.numerator) > cfg.ALG_RESULTANT_MAX_OPS:
         return None
@@ -276,7 +263,7 @@ def _resultant_gap_cached(
         return None
 
 
-def algebraic_gap_bound(term: sp.Expr, refine: bool = True) -> Optional[AlgebraicGap]:
+def algebraic_gap_bound(term: sp.Expr, refine: bool = True) -> AlgebraicGap | None:
     """Return a certified algebraic separation bound.
 
     ``refine=False`` stops after the inexpensive Cauchy/Fujiwara layer. The
@@ -294,20 +281,15 @@ def algebraic_gap_bound(term: sp.Expr, refine: bool = True) -> Optional[Algebrai
     cheap = _poly_gap_cheap_cached(term)
     if cheap is None or not refine:
         return cheap
-    bounds = [
-        bound
-        for bound in (_poly_gap_cached(term), _resultant_gap_cached(term))
-        if bound is not None
-    ]
+    bounds = [bound for bound in (_poly_gap_cached(term), _resultant_gap_cached(term))
+              if bound is not None]
     return max(bounds, key=lambda item: item.lower) if bounds else cheap
 
 
 def algebraic_gap_test(term: sp.Expr) -> ZeroClassification:
     """Use exact minimal-polynomial and separation bounds to decide zero."""
     if not within_budget(sp.sympify(term)):
-        return ZeroClassification(
-            Verdict.UNKNOWN, "algebraic-gap", detail="exact-method budget exceeded"
-        )
+        return ZeroClassification(Verdict.UNKNOWN, "algebraic-gap", detail="exact-method budget exceeded")
 
     term = sp.sympify(term)
     info = classify_algebraic_expression(term)
@@ -318,8 +300,7 @@ def algebraic_gap_test(term: sp.Expr) -> ZeroClassification:
         min_poly = minpoly_for(term, marker).clear_denoms()[1]
         if min_poly.degree() == 1 and min_poly.eval(0) == 0:
             return ZeroClassification(
-                Verdict.ZERO_PROVEN,
-                "algebraic-gap",
+                Verdict.ZERO_PROVEN, "algebraic-gap",
                 detail="minimal polynomial is linear with root zero",
                 evidence="minimal-polynomial",
             )
@@ -328,16 +309,15 @@ def algebraic_gap_test(term: sp.Expr) -> ZeroClassification:
         gap = algebraic_gap_bound(term, refine=False)
         if gap is not None:
             return ZeroClassification(
-                Verdict.NONZERO_PROVEN,
-                "algebraic-gap",
+                Verdict.NONZERO_PROVEN, "algebraic-gap",
                 detail=f"{gap.method} bound gives |value| >= {gap.lower}",
                 evidence="algebraic-separation",
             )
     except EXACT_METHOD_ERRORS as exc:
         return ZeroClassification(Verdict.UNKNOWN, "algebraic-gap", detail=str(exc))
-    return ZeroClassification(
-        Verdict.UNKNOWN, "algebraic-gap", detail="no separation bound obtained"
-    )
+    return ZeroClassification(Verdict.UNKNOWN, "algebraic-gap", detail="no separation bound obtained")
+
+
 
 
 def clear_bound_cache() -> None:

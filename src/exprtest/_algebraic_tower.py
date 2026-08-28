@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 import sympy as sp
 
@@ -50,9 +49,8 @@ def _tower_nodes(term: sp.Expr, out: list[sp.Expr]) -> None:
         out.append(term)
 
 
-def _tower_relation(
-    term: sp.Expr, sym: sp.Symbol, repl: dict[sp.Expr, sp.Symbol]
-) -> Optional[sp.Poly]:
+def _tower_relation(term: sp.Expr, sym: sp.Symbol,
+                    repl: dict[sp.Expr, sp.Symbol]) -> sp.Poly | None:
     """Build a defining relation whose coefficients use earlier symbols."""
     try:
         if term == sp.I:
@@ -62,7 +60,8 @@ def _tower_relation(
             num = int(power.p)
             den = int(power.q)
             base = term.base.xreplace(repl)
-            rel = sym**den - base**num if num >= 0 else base ** (-num) * sym**den - 1
+            rel = (sym**den - base**num if num >= 0
+                   else base**(-num) * sym**den - 1)
             vars_ = (sym,) + tuple(repl.values())
             return sp.Poly(rel, *vars_, domain=sp.QQ)
         probe = sp.Dummy("z")
@@ -72,9 +71,8 @@ def _tower_relation(
         return None
 
 
-def _tower_parts(
-    term: sp.Expr, syms: frozenset[sp.Symbol], max_terms: int
-) -> Optional[tuple[sp.Expr, sp.Expr, frozenset[sp.Symbol]]]:
+def _tower_parts(term: sp.Expr, syms: frozenset[sp.Symbol],
+                 max_terms: int) -> tuple[sp.Expr, sp.Expr, frozenset[sp.Symbol]] | None:
     """Represent a rational DAG while tracking each subtree's tower support.
 
     Term-count checks use only variables that actually occur in the current
@@ -91,10 +89,8 @@ def _tower_parts(
             return True
         try:
             vars_ = tuple(sorted(active, key=str))
-            return (
-                len(sp.Poly(num, *vars_, domain=sp.QQ).terms()) <= max_terms
-                and len(sp.Poly(den, *vars_, domain=sp.QQ).terms()) <= max_terms
-            )
+            return (len(sp.Poly(num, *vars_, domain=sp.QQ).terms()) <= max_terms
+                    and len(sp.Poly(den, *vars_, domain=sp.QQ).terms()) <= max_terms)
         except EXACT_METHOD_ERRORS:
             return False
 
@@ -144,9 +140,8 @@ def _tower_parts(
     return None
 
 
-def _tower_support(
-    active: frozenset[sp.Symbol], steps: tuple[TowerStep, ...]
-) -> frozenset[sp.Symbol]:
+def _tower_support(active: frozenset[sp.Symbol],
+                   steps: tuple[TowerStep, ...]) -> frozenset[sp.Symbol]:
     """Close direct symbol support over dependencies in defining relations."""
     if not active:
         return active
@@ -167,7 +162,7 @@ def _tower_support(
     return frozenset(known)
 
 
-def build_algebraic_tower(term: sp.Expr) -> Optional[AlgebraicTower]:
+def build_algebraic_tower(term: sp.Expr) -> AlgebraicTower | None:
     """Build a dependency-ordered triangular model for nested algebraic values.
 
     The model is constructed structurally rather than through ``cancel`` or
@@ -181,7 +176,8 @@ def build_algebraic_tower(term: sp.Expr) -> Optional[AlgebraicTower]:
         return None
     nodes: list[sp.Expr] = []
     _tower_nodes(term, nodes)
-    if len(nodes) > min(cfg.ALG_TOWER_MAX_GENS, cfg.TOWER_MAX_GENS):
+    if len(nodes) > min(cfg.ALG_TOWER_MAX_GENS,
+                        cfg.TOWER_MAX_GENS):
         return None
     repl: dict[sp.Expr, sp.Symbol] = {}
     steps: list[TowerStep] = []
@@ -209,20 +205,17 @@ def build_algebraic_tower(term: sp.Expr) -> Optional[AlgebraicTower]:
                 sp.Poly(top, *tuple(sorted(top_support, key=str)), domain=sp.QQ)
             if bottom_support:
                 sp.Poly(bottom, *tuple(sorted(bottom_support, key=str)), domain=sp.QQ)
-        return AlgebraicTower(
-            term, step_tuple, top, bottom, top_support, bottom_support
-        )
+        return AlgebraicTower(term, step_tuple, top, bottom, top_support, bottom_support)
     except EXACT_METHOD_ERRORS:
         return None
+
 
 
 def _sparse_poly(expr: sp.Expr, variables: tuple[sp.Symbol, ...]):
     """Convert a bounded rational polynomial to a sparse monomial mapping."""
     try:
         poly = sp.Poly(expr, *variables, domain=sp.QQ)
-        terms = {
-            tuple(mon): sp.Rational(coeff) for mon, coeff in poly.terms() if coeff != 0
-        }
+        terms = {tuple(mon): sp.Rational(coeff) for mon, coeff in poly.terms() if coeff != 0}
         if len(terms) > cfg.TOWER_SPARSE_MAX_TERMS:
             return None
         return terms
@@ -230,36 +223,29 @@ def _sparse_poly(expr: sp.Expr, variables: tuple[sp.Symbol, ...]):
         return None
 
 
-def _sparse_expr(
-    terms: dict[tuple[int, ...], sp.Rational], variables: tuple[sp.Symbol, ...]
-) -> sp.Expr:
+def _sparse_expr(terms: dict[tuple[int, ...], sp.Rational],
+                 variables: tuple[sp.Symbol, ...]) -> sp.Expr:
     pieces = []
     for powers, coeff in terms.items():
         item = sp.sympify(coeff)
         for variable, power in zip(variables, powers):
             if power:
-                item *= variable**power
+                item *= variable ** power
         pieces.append(item)
     return sp.Add(*pieces) if pieces else sp.Integer(0)
 
 
-def _sparse_reduce_var(
-    terms: dict[tuple[int, ...], sp.Rational],
-    relation: dict[tuple[int, ...], sp.Rational],
-    index: int,
-):
+def _sparse_reduce_var(terms: dict[tuple[int, ...], sp.Rational],
+                       relation: dict[tuple[int, ...], sp.Rational],
+                       index: int):
     """Reduce one monic triangular relation directly in sparse quotient form."""
     if not terms:
         return terms
     degree = max((powers[index] for powers in relation), default=0)
-    lead_power = tuple(
-        degree if pos == index else 0 for pos in range(len(next(iter(terms))))
-    )
+    lead_power = tuple(degree if pos == index else 0 for pos in range(len(next(iter(terms)))))
     if degree <= 0 or relation.get(lead_power) != 1:
         return None
-    lower = [
-        (powers, coeff) for powers, coeff in relation.items() if powers != lead_power
-    ]
+    lower = [(powers, coeff) for powers, coeff in relation.items() if powers != lead_power]
     out = dict(terms)
     while True:
         target = next((powers for powers in out if powers[index] >= degree), None)
@@ -280,9 +266,8 @@ def _sparse_reduce_var(
     return out
 
 
-def _tower_sparse_rem(
-    poly: sp.Expr, tower: AlgebraicTower, support: frozenset[sp.Symbol]
-) -> Optional[sp.Expr]:
+def _tower_sparse_rem(poly: sp.Expr, tower: AlgebraicTower,
+                      support: frozenset[sp.Symbol]) -> sp.Expr | None:
     """Reduce a tower polynomial with sparse monomial arithmetic.
 
     Only monic triangular relations are admitted. Unsupported relations fall
@@ -307,16 +292,12 @@ def _tower_sparse_rem(
     return quick_reduce(_sparse_expr(terms, variables))
 
 
-def _tower_rem(
-    poly: sp.Expr, tower: AlgebraicTower, support: Optional[frozenset[sp.Symbol]] = None
-) -> sp.Expr:
+def _tower_rem(poly: sp.Expr, tower: AlgebraicTower,
+               support: frozenset[sp.Symbol] | None = None) -> sp.Expr:
     """Reduce only the dependency-closed tower levels used by ``poly``."""
     rem = poly
-    active = (
-        support
-        if support is not None
-        else _tower_support(frozenset(rem.free_symbols), tower.steps)
-    )
+    active = support if support is not None else _tower_support(
+        frozenset(rem.free_symbols), tower.steps)
     sparse = _tower_sparse_rem(rem, tower, active)
     if sparse is not None:
         return sparse
@@ -347,7 +328,6 @@ def _tower_nonzero(term: sp.Expr) -> bool:
         return term != 0
     try:
         from ._exact_constants import algebraic_sign
-
         return algebraic_sign(term) in (-1, 1)
     except EXACT_METHOD_ERRORS:
         return False
@@ -358,8 +338,7 @@ def tower_algebraic_test(term: sp.Expr) -> ZeroClassification:
     tower = build_algebraic_tower(term)
     if tower is None:
         return ZeroClassification(
-            Verdict.UNKNOWN,
-            "algebraic-tower",
+            Verdict.UNKNOWN, "algebraic-tower",
             detail="could not build a bounded triangular algebraic model",
         )
     top = _tower_rem(tower.numerator, tower, tower.numerator_support)
@@ -368,14 +347,12 @@ def tower_algebraic_test(term: sp.Expr) -> ZeroClassification:
     if top == 0:
         if _tower_nonzero(restored_den):
             return ZeroClassification(
-                Verdict.ZERO_PROVEN,
-                "algebraic-tower",
+                Verdict.ZERO_PROVEN, "algebraic-tower",
                 detail="triangular quotient reduction produced zero with a proven nonzero denominator",
                 evidence="triangular-algebraic-reduction",
             )
         return ZeroClassification(
-            Verdict.UNKNOWN,
-            "algebraic-tower",
+            Verdict.UNKNOWN, "algebraic-tower",
             detail="zero numerator found but denominator nonvanishing is unresolved",
         )
 
@@ -384,20 +361,18 @@ def tower_algebraic_test(term: sp.Expr) -> ZeroClassification:
     # values and require an independent exact nonzero/sign proof.
     if not _tower_nonzero(restored_den):
         return ZeroClassification(
-            Verdict.UNKNOWN,
-            "algebraic-tower",
+            Verdict.UNKNOWN, "algebraic-tower",
             detail="tower denominator nonvanishing is unresolved",
         )
     restored_top = _restore_tower(top, tower)
     if _tower_nonzero(restored_top):
         return ZeroClassification(
-            Verdict.NONZERO_PROVEN,
-            "algebraic-tower",
+            Verdict.NONZERO_PROVEN, "algebraic-tower",
             detail="reduced tower numerator has an independent exact nonzero proof",
             evidence="triangular-algebraic-nonzero",
         )
     return ZeroClassification(
-        Verdict.UNKNOWN,
-        "algebraic-tower",
+        Verdict.UNKNOWN, "algebraic-tower",
         detail="tower remainder is nonzero but selected-branch nonvanishing is unresolved",
     )
+

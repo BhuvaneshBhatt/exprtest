@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 import sympy as sp
 
 from ._domains import NumberKind, number_kind
@@ -22,14 +20,10 @@ class OracleMemo:
     __slots__ = ("defined_cache", "feature_cache", "kind_cache", "nonzero_cache")
 
     def __init__(self) -> None:
-        self.nonzero_cache: Optional[dict[tuple[sp.Expr, object], Optional[bool]]] = (
-            None
-        )
-        self.defined_cache: Optional[dict[tuple[sp.Expr, object], Optional[bool]]] = (
-            None
-        )
-        self.kind_cache: Optional[dict[sp.Expr, NumberKind]] = None
-        self.feature_cache: Optional[dict[sp.Expr, ExprFeatures]] = None
+        self.nonzero_cache: dict[tuple[sp.Expr, object], bool | None] | None = None
+        self.defined_cache: dict[tuple[sp.Expr, object], bool | None] | None = None
+        self.kind_cache: dict[sp.Expr, NumberKind] | None = None
+        self.feature_cache: dict[sp.Expr, ExprFeatures] | None = None
 
     def features(self, term: sp.Expr) -> ExprFeatures:
         """Return structural features, reusing facts within this oracle call."""
@@ -42,7 +36,7 @@ class OracleMemo:
             self.feature_cache[term] = cached
         return cached
 
-    def nonzero(self, term: sp.Expr, assumptions=True) -> Optional[bool]:
+    def nonzero(self, term: sp.Expr, assumptions=True) -> bool | None:
         """Return a cached cheap nonzero proof for ``term``."""
         from ._nonzero import quick_nonzero
 
@@ -50,7 +44,7 @@ class OracleMemo:
             self.nonzero_cache = {}
         return quick_nonzero(term, assumptions, context=self)
 
-    def defined_nonzero(self, term: sp.Expr, assumptions=True) -> Optional[bool]:
+    def defined_nonzero(self, term: sp.Expr, assumptions=True) -> bool | None:
         """Return a cached proof that ``term`` is finite and nonzero."""
         from ._defined import quick_defined_nonzero
 

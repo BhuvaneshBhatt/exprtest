@@ -6,9 +6,10 @@ therefore pay-for-play and intended for benchmarks, tuning, and diagnostics.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from time import perf_counter
-from typing import Callable, Optional, TypeVar
+from typing import TypeVar
 
 from ._result import ZeroClassification
 
@@ -34,7 +35,7 @@ class ZeroTestProfile:
     timing records.
     """
 
-    result: Optional[bool]
+    result: bool | None
     classification: ZeroClassification
     stages: tuple[StageTiming, ...]
     total_seconds: float
@@ -55,7 +56,7 @@ class ZeroTestProfile:
         return self.classification.detail
 
     @property
-    def evidence(self) -> Optional[str]:
+    def evidence(self) -> str | None:
         """Optional compact description of the evidence used."""
         return self.classification.evidence
 
@@ -74,12 +75,8 @@ class StageProfiler:
         self._stages: list[StageTiming] = []
         self._start = perf_counter()
 
-    def run(
-        self,
-        stage: str,
-        func: Callable[[], T],
-        outcome: Optional[Callable[[T], str]] = None,
-    ) -> T:
+    def run(self, stage: str, func: Callable[[], T],
+            outcome: Callable[[T], str] | None = None) -> T:
         start = perf_counter()
         value = func()
         elapsed = perf_counter() - start
@@ -91,7 +88,7 @@ class StageProfiler:
         self._stages.append(StageTiming(stage, 0.0, outcome, detail))
 
     def finish(
-        self, result: Optional[bool], classification: ZeroClassification
+        self, result: bool | None, classification: ZeroClassification
     ) -> ZeroTestProfile:
         """Finalize timings together with the oracle's proof classification."""
         return ZeroTestProfile(

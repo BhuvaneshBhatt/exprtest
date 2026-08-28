@@ -5,7 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from functools import lru_cache
 from math import prod
-from typing import Optional
 
 import sympy as sp
 from sympy.polys.numberfields import to_number_field
@@ -85,21 +84,15 @@ def classify_algebraic_expression(expr: sp.Expr) -> AlgebraicExpressionInfo:
     if expr.free_symbols:
         return AlgebraicExpressionInfo(False, False, "expression has free symbols")
     if _contains_inexact_number(expr):
-        return AlgebraicExpressionInfo(
-            False, False, "expression contains inexact numbers"
-        )
+        return AlgebraicExpressionInfo(False, False, "expression contains inexact numbers")
     if expr.has(sp.zoo, sp.oo, -sp.oo, sp.nan):
-        return AlgebraicExpressionInfo(
-            False, False, "expression contains a non-finite value"
-        )
+        return AlgebraicExpressionInfo(False, False, "expression contains a non-finite value")
     try:
         algebraic = expr.is_algebraic is True
     except EXACT_METHOD_ERRORS:
         algebraic = False
     if not algebraic:
-        return AlgebraicExpressionInfo(
-            False, False, "expression is not known to be algebraic"
-        )
+        return AlgebraicExpressionInfo(False, False, "expression is not known to be algebraic")
     simple = _simple_algebraic_structure(expr)
     return AlgebraicExpressionInfo(True, simple, "closed exact algebraic expression")
 
@@ -137,7 +130,8 @@ def extract_algebraic_generators(expr: sp.Expr) -> tuple[sp.Expr, ...]:
     return tuple(generators)
 
 
-def build_algebraic_model(expr: sp.Expr) -> Optional[AlgebraicModel]:
+
+def build_algebraic_model(expr: sp.Expr) -> AlgebraicModel | None:
     """Build a rational-polynomial model and generator minimal polynomials.
 
     Returns ``None`` when exact modeling is unsupported or exceeds the
@@ -231,9 +225,7 @@ def _mod_poly(term: sp.Expr, var: sp.Symbol, divisor: sp.Poly) -> sp.Expr:
     return sp.Poly(term, var, domain="EX").rem(divisor).as_expr()
 
 
-def _sequential_minpoly_remainder(
-    polynomial: sp.Expr, model: AlgebraicModel
-) -> sp.Expr:
+def _sequential_minpoly_remainder(polynomial: sp.Expr, model: AlgebraicModel) -> sp.Expr:
     remainder = polynomial
     for variable, defining_poly in zip(model.variables, model.minpolys):
         divisor = sp.Poly(defining_poly.as_expr(), variable, domain="EX")
@@ -247,9 +239,7 @@ def _model_denominator_is_proven_nonzero(model: AlgebraicModel) -> bool:
     if model.denominator.is_Rational:
         return model.denominator != 0
     try:
-        restored = model.denominator.xreplace(
-            dict(zip(model.variables, model.generators))
-        )
+        restored = model.denominator.xreplace(dict(zip(model.variables, model.generators)))
         value = to_number_field(restored)
         if isinstance(value, sp.AlgebraicNumber):
             return not all(c == 0 for c in value.coeffs())
@@ -258,7 +248,7 @@ def _model_denominator_is_proven_nonzero(model: AlgebraicModel) -> bool:
         return False
 
 
-def _generator_degree_product(expr: sp.Expr, limit: int) -> Optional[int]:
+def _generator_degree_product(expr: sp.Expr, limit: int) -> int | None:
     """Estimate the product of generator degrees, stopping after ``limit``."""
     try:
         modeled_expr = sp.cancel(expr)
@@ -285,11 +275,7 @@ def algebraic_relation_reduction_test(expr: sp.Expr) -> ZeroClassification:
     be represented by their separate univariate minimal polynomials.
     """
     if not stage_allowed(sp.sympify(expr), "minpoly"):
-        return ZeroClassification(
-            Verdict.UNKNOWN,
-            "algebraic-remainder",
-            detail="exact-method budget exceeded",
-        )
+        return ZeroClassification(Verdict.UNKNOWN, "algebraic-remainder", detail="exact-method budget exceeded")
 
     model = build_algebraic_model(expr)
     if model is None:
@@ -299,9 +285,7 @@ def algebraic_relation_reduction_test(expr: sp.Expr) -> ZeroClassification:
             detail="could not build an algebraic generator model",
         )
     if not model.generators:
-        verdict = (
-            Verdict.ZERO_PROVEN if model.numerator == 0 else Verdict.NONZERO_PROVEN
-        )
+        verdict = Verdict.ZERO_PROVEN if model.numerator == 0 else Verdict.NONZERO_PROVEN
         return ZeroClassification(
             verdict,
             "algebraic-remainder",
@@ -311,9 +295,7 @@ def algebraic_relation_reduction_test(expr: sp.Expr) -> ZeroClassification:
     try:
         remainder = _sequential_minpoly_remainder(model.numerator, model)
     except EXACT_METHOD_ERRORS as exc:
-        return ZeroClassification(
-            Verdict.UNKNOWN, "algebraic-remainder", detail=str(exc)
-        )
+        return ZeroClassification(Verdict.UNKNOWN, "algebraic-remainder", detail=str(exc))
     if remainder == 0:
         if not _model_denominator_is_proven_nonzero(model):
             return ZeroClassification(
@@ -324,10 +306,8 @@ def algebraic_relation_reduction_test(expr: sp.Expr) -> ZeroClassification:
         return ZeroClassification(
             Verdict.ZERO_PROVEN,
             "algebraic-remainder",
-            detail=(
-                f"numerator reduced to zero modulo {len(model.minpolys)} "
-                "generator minimal polynomial(s), with denominator proven nonzero"
-            ),
+            detail=(f"numerator reduced to zero modulo {len(model.minpolys)} "
+                    "generator minimal polynomial(s), with denominator proven nonzero"),
             evidence="minimal-polynomial-remainder",
         )
     return ZeroClassification(
@@ -337,9 +317,7 @@ def algebraic_relation_reduction_test(expr: sp.Expr) -> ZeroClassification:
     )
 
 
-def common_number_field_test(
-    expr: sp.Expr, model: Optional[AlgebraicModel] = None
-) -> ZeroClassification:
+def common_number_field_test(expr: sp.Expr, model: AlgebraicModel | None = None) -> ZeroClassification:
     """Decide a closed algebraic expression in one exact number field.
 
     The conversion is gated by a degree-product budget because primitive
@@ -347,24 +325,15 @@ def common_number_field_test(
     zero or nonzero.
     """
     if not stage_allowed(sp.sympify(expr), "minpoly"):
-        return ZeroClassification(
-            Verdict.UNKNOWN,
-            "algebraic-common-field",
-            detail="exact-method budget exceeded",
-        )
+        return ZeroClassification(Verdict.UNKNOWN, "algebraic-common-field", detail="exact-method budget exceeded")
 
     expr = sp.sympify(expr)
     info = classify_algebraic_expression(expr)
     if not info.is_algebraic:
-        return ZeroClassification(
-            Verdict.UNKNOWN, "algebraic-common-field", detail=info.detail
-        )
+        return ZeroClassification(Verdict.UNKNOWN, "algebraic-common-field", detail=info.detail)
     model = model or build_algebraic_model(expr)
-    degree_product = (
-        model.degree_product
-        if model is not None
-        else _generator_degree_product(expr, cfg.ALG_COMMON_MAX_DEGREE)
-    )
+    degree_product = (model.degree_product if model is not None else
+                      _generator_degree_product(expr, cfg.ALG_COMMON_MAX_DEGREE))
     if degree_product is None:
         return ZeroClassification(
             Verdict.UNKNOWN,
@@ -375,37 +344,29 @@ def common_number_field_test(
         return ZeroClassification(
             Verdict.UNKNOWN,
             "algebraic-common-field",
-            detail=(
-                f"degree product {degree_product} exceeds common-field budget "
-                f"{cfg.ALG_COMMON_MAX_DEGREE}"
-            ),
+            detail=(f"degree product {degree_product} exceeds common-field budget "
+                    f"{cfg.ALG_COMMON_MAX_DEGREE}"),
         )
     try:
         value = to_number_field(expr)
         # AlgebraicNumber(0).is_zero is not consistently True across SymPy
         # versions, so inspect its exact coefficient representation as well.
         coeffs = tuple(value.coeffs()) if isinstance(value, sp.AlgebraicNumber) else ()
-        zero = (
-            value.as_expr() == 0
-            if isinstance(value, sp.AlgebraicNumber)
-            else value == 0
-        )
+        zero = value.as_expr() == 0 if isinstance(value, sp.AlgebraicNumber) else value == 0
         if coeffs and all(c == 0 for c in coeffs):
             zero = True
         return ZeroClassification(
             Verdict.ZERO_PROVEN if zero else Verdict.NONZERO_PROVEN,
             "algebraic-common-field",
-            detail=(
-                "common number-field representation is exactly zero"
-                if zero
-                else "common number-field representation is exactly nonzero"
-            ),
+            detail=("common number-field representation is exactly zero" if zero
+                    else "common number-field representation is exactly nonzero"),
             evidence="common-number-field",
         )
     except EXACT_METHOD_ERRORS as exc:
-        return ZeroClassification(
-            Verdict.UNKNOWN, "algebraic-common-field", detail=str(exc)
-        )
+        return ZeroClassification(Verdict.UNKNOWN, "algebraic-common-field", detail=str(exc))
+
+
+
 
 
 def clear_model_cache() -> None:

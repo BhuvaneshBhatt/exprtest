@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import random
 from contextlib import contextmanager
-from typing import Optional
 
 try:
     import flint
@@ -28,29 +27,14 @@ class UnsupportedNode(Exception):
 
 
 _ACB_CALLABLE_UNARY = {
-    sp.exp: "exp",
-    sp.log: "log",
-    sp.sin: "sin",
-    sp.cos: "cos",
-    sp.tan: "tan",
-    sp.cot: "cot",
-    sp.sec: "sec",
-    sp.csc: "csc",
-    sp.sinh: "sinh",
-    sp.cosh: "cosh",
-    sp.tanh: "tanh",
-    sp.coth: "coth",
-    sp.sech: "sech",
-    sp.csch: "csch",
-    sp.asin: "asin",
-    sp.acos: "acos",
-    sp.atan: "atan",
-    sp.asinh: "asinh",
-    sp.acosh: "acosh",
-    sp.atanh: "atanh",
-    sp.sign: "sgn",
-    sp.conjugate: "conjugate",
-    sp.arg: "arg",
+    sp.exp: "exp", sp.log: "log",
+    sp.sin: "sin", sp.cos: "cos", sp.tan: "tan",
+    sp.cot: "cot", sp.sec: "sec", sp.csc: "csc",
+    sp.sinh: "sinh", sp.cosh: "cosh", sp.tanh: "tanh",
+    sp.coth: "coth", sp.sech: "sech", sp.csch: "csch",
+    sp.asin: "asin", sp.acos: "acos", sp.atan: "atan",
+    sp.asinh: "asinh", sp.acosh: "acosh", sp.atanh: "atanh",
+    sp.sign: "sgn", sp.conjugate: "conjugate", sp.arg: "arg",
 }
 _ACB_PROPERTY_UNARY = {sp.re: "real", sp.im: "imag"}
 
@@ -71,11 +55,7 @@ def _sympy_to_acb_ball(expr: sp.Expr, prec_bits: int, subs: dict):
     if expr.is_Symbol:
         raise UnsupportedNode(f"free symbol {expr} with no numeric value")
     if expr.is_Integer or expr.is_Rational:
-        value = (
-            flint.fmpq(int(expr.p), int(expr.q))
-            if expr.is_Rational and not expr.is_Integer
-            else int(expr)
-        )
+        value = flint.fmpq(int(expr.p), int(expr.q)) if expr.is_Rational and not expr.is_Integer else int(expr)
         return flint.acb(value)
     if expr.is_Float:
         return flint.acb(str(expr))
@@ -129,6 +109,7 @@ def _log2_radius(rad: flint.arb) -> float:
     return float(exponent + mantissa.bit_length())
 
 
+
 def _precision_from_lower(lower) -> int:
     """Choose a conservative Arb starting precision from an exact lower bound."""
     try:
@@ -145,6 +126,7 @@ def _precision_from_lower(lower) -> int:
     return min(cfg.ARB_HINT_MAX_START_BITS, max(cfg.INITIAL_PREC_BITS, target))
 
 
+
 def _precision_from_expr(expr: sp.Expr) -> int:
     """Predict a modest starting precision from structural cancellation risk."""
     features = expression_features(sp.sympify(expr))
@@ -159,13 +141,9 @@ def _precision_from_expr(expr: sp.Expr) -> int:
     return min(cfg.ARB_HINT_MAX_START_BITS, cfg.INITIAL_PREC_BITS + extra)
 
 
-def _next_precision(
-    prec: int,
-    cur_log2_rad: float,
-    prev_prec: Optional[int],
-    prev_log2_rad: Optional[float],
-    lower=None,
-) -> int:
+def _next_precision(prec: int, cur_log2_rad: float,
+                    prev_prec: int | None, prev_log2_rad: float | None,
+                    lower=None) -> int:
     """Predict the next useful Arb precision from observed enclosure shrinkage."""
     default = min(cfg.MAX_PREC_BITS + 1, max(prec + cfg.ARB_MIN_STEP_BITS, prec * 2))
     if prev_prec is None or prev_log2_rad is None:
@@ -179,22 +157,14 @@ def _next_precision(
         try:
             bound = sp.Rational(lower)
             if 0 < bound < 1:
-                lower_bits = max(
-                    0, int(bound.q).bit_length() - abs(int(bound.p)).bit_length() + 1
-                )
+                lower_bits = max(0, int(bound.q).bit_length() - abs(int(bound.p)).bit_length() + 1)
                 # Radius log2 <= -lower_bits-guard should separate a nonzero value.
                 target_rad = -lower_bits - cfg.ARB_TARGET_GUARD_BITS
                 need_shrink = max(0.0, cur_log2_rad - target_rad)
-                predicted = (
-                    prec + int(need_shrink / max(slope, 0.1)) + cfg.ARB_MIN_STEP_BITS
-                )
-                return min(
-                    cfg.MAX_PREC_BITS + 1,
-                    max(
-                        prec + cfg.ARB_MIN_STEP_BITS,
-                        min(predicted, prec * cfg.ARB_MAX_GROWTH_FACTOR),
-                    ),
-                )
+                predicted = prec + int(need_shrink / max(slope, 0.1)) + cfg.ARB_MIN_STEP_BITS
+                return min(cfg.MAX_PREC_BITS + 1,
+                           max(prec + cfg.ARB_MIN_STEP_BITS,
+                               min(predicted, prec * cfg.ARB_MAX_GROWTH_FACTOR)))
         except RECOVERABLE_SYMPY_ERRORS:
             pass
     # Good convergence needs only a measured step; poor convergence gets a
@@ -202,10 +172,8 @@ def _next_precision(
     factor = 2 if slope >= cfg.MIN_SHRINK_FRACTION else cfg.ARB_MAX_GROWTH_FACTOR
     return min(cfg.MAX_PREC_BITS + 1, max(prec + cfg.ARB_MIN_STEP_BITS, prec * factor))
 
-
-def adaptive_precision_ball_test(
-    expr: sp.Expr, subs: Optional[dict] = None, separation_bound=None
-) -> ZeroClassification:
+def adaptive_precision_ball_test(expr: sp.Expr, subs: dict | None = None,
+                                 separation_bound=None) -> ZeroClassification:
     """Escalate Arb precision and record quantitative zero-like evidence.
 
     When an exact positive lower bound for a nonzero value is already known,
@@ -213,27 +181,20 @@ def adaptive_precision_ball_test(
     supplies the proof; the hint never changes the verdict by itself.
     """
     if flint is None:
-        return ZeroClassification(
-            Verdict.UNKNOWN, "numerical", detail="python-flint is unavailable"
-        )
+        return ZeroClassification(Verdict.UNKNOWN, "numerical", detail="python-flint is unavailable")
     expr = sp.sympify(expr)
     if expr.has(sp.Float):
         return ZeroClassification(
-            Verdict.UNKNOWN,
-            "numerical",
+            Verdict.UNKNOWN, "numerical",
             detail="inexact SymPy Float input is not promoted to a rigorous exact enclosure",
             evidence="inexact-input",
         )
     subs = subs or {}
     structural_prec = _precision_from_expr(expr)
-    lower_prec = (
-        _precision_from_lower(separation_bound)
-        if separation_bound is not None
-        else cfg.INITIAL_PREC_BITS
-    )
+    lower_prec = _precision_from_lower(separation_bound) if separation_bound is not None else cfg.INITIAL_PREC_BITS
     prec = min(cfg.ARB_HINT_MAX_START_BITS, max(structural_prec, lower_prec))
-    prev_log2_rad: Optional[float] = None
-    prev_prec: Optional[int] = None
+    prev_log2_rad: float | None = None
+    prev_prec: int | None = None
     consecutive_shrinks = 0
     history = []
 
@@ -244,68 +205,46 @@ def adaptive_precision_ball_test(
         except UnsupportedNode as exc:
             return ZeroClassification(Verdict.UNKNOWN, "numerical", detail=str(exc))
         if not val.is_finite:
-            return ZeroClassification(
-                Verdict.UNKNOWN,
-                "numerical",
-                detail="non-finite enclosure during evaluation",
-            )
+            return ZeroClassification(Verdict.UNKNOWN, "numerical", detail="non-finite enclosure during evaluation")
 
         history.append(f"{prec} bits: {val}")
         if 0 not in val:
             return ZeroClassification(
-                Verdict.NONZERO_PROVEN,
-                "numerical",
-                precision_bits=prec,
+                Verdict.NONZERO_PROVEN, "numerical", precision_bits=prec,
                 detail=f"Arb ball {val} rigorously excludes zero",
-                evidence="rigorous-enclosure",
-                enclosure_history=tuple(history),
+                evidence="rigorous-enclosure", enclosure_history=tuple(history),
             )
         if val.rad() == 0:
             return ZeroClassification(
-                Verdict.ZERO_PROVEN,
-                "numerical",
-                precision_bits=prec,
+                Verdict.ZERO_PROVEN, "numerical", precision_bits=prec,
                 detail=f"Arb ball {val} is exact and equals zero",
-                evidence="exact-enclosure",
-                enclosure_history=tuple(history),
+                evidence="exact-enclosure", enclosure_history=tuple(history),
             )
 
         cur_log2_rad = _log2_radius(val.rad())
         if prev_log2_rad is not None and prev_prec is not None:
             precision_gain = prec - prev_prec
             actual_shrink = prev_log2_rad - cur_log2_rad
-            if (
-                precision_gain > 0
-                and actual_shrink >= cfg.MIN_SHRINK_FRACTION * precision_gain
-            ):
+            if precision_gain > 0 and actual_shrink >= cfg.MIN_SHRINK_FRACTION * precision_gain:
                 consecutive_shrinks += 1
             else:
                 consecutive_shrinks = 0
             if consecutive_shrinks >= cfg.REQUIRED_SHRINKS:
                 return ZeroClassification(
-                    Verdict.ZERO_UNPROVEN,
-                    "numerical",
-                    precision_bits=prec,
-                    detail=(
-                        f"zero remains inside the enclosure while its radius tracks increasing precision "
-                        f"for {consecutive_shrinks} consecutive escalations"
-                    ),
-                    evidence="precision-convergence",
-                    enclosure_history=tuple(history),
+                    Verdict.ZERO_UNPROVEN, "numerical", precision_bits=prec,
+                    detail=(f"zero remains inside the enclosure while its radius tracks increasing precision "
+                            f"for {consecutive_shrinks} consecutive escalations"),
+                    evidence="precision-convergence", enclosure_history=tuple(history),
                 )
-        next_prec = _next_precision(
-            prec, cur_log2_rad, prev_prec, prev_log2_rad, separation_bound
-        )
+        next_prec = _next_precision(prec, cur_log2_rad, prev_prec, prev_log2_rad, separation_bound)
         prev_log2_rad = cur_log2_rad
         prev_prec = prec
         prec = next_prec
 
     return ZeroClassification(
-        Verdict.UNKNOWN,
-        "numerical",
+        Verdict.UNKNOWN, "numerical",
         detail=f"undetermined after escalating to {cfg.MAX_PREC_BITS} bits",
-        evidence="inconclusive-enclosures",
-        enclosure_history=tuple(history),
+        evidence="inconclusive-enclosures", enclosure_history=tuple(history),
     )
 
 
@@ -319,12 +258,7 @@ def _random_exact_sample(symbol: sp.Symbol, rng: random.Random):
         if symbol.is_negative:
             return sp.Integer(-rng.randint(1, 100))
         return sp.Integer(rng.randint(-100, 100))
-    if (
-        symbol.is_real
-        or symbol.is_positive
-        or symbol.is_nonnegative
-        or symbol.is_negative
-    ):
+    if symbol.is_real or symbol.is_positive or symbol.is_nonnegative or symbol.is_negative:
         num = rng.randint(1, 10_000)
         den = rng.randint(1, 97)
         value = sp.Rational(num, den)
@@ -342,9 +276,7 @@ def _random_exact_sample(symbol: sp.Symbol, rng: random.Random):
     return re + sp.I * im
 
 
-def _sample_satisfying_assumptions(
-    free_symbols, assumptions, rng: random.Random, max_attempts: int = 64
-):
+def _sample_satisfying_assumptions(free_symbols, assumptions, rng: random.Random, max_attempts: int = 64):
     assumptions = normalize_assumptions(assumptions)
     symbols = tuple(sorted(free_symbols, key=str))
     equalities = equality_substitutions(assumptions)
@@ -364,8 +296,8 @@ def random_witness_nonzero_check(
     prec_bits: int = cfg.WITNESS_PREC_BITS,
     num_points: int = cfg.NUM_WITNESS_POINTS,
     assumptions=True,
-    rng: Optional[random.Random] = None,
-) -> Optional[ZeroClassification]:
+    rng: random.Random | None = None,
+) -> ZeroClassification | None:
     """Seek rigorous nonzero witness points that satisfy caller assumptions."""
     if flint is None:
         return None
@@ -386,13 +318,9 @@ def random_witness_nonzero_check(
             return None
         if val.is_finite and 0 not in val:
             return ZeroClassification(
-                Verdict.NONZERO_LIKELY,
-                "numeric-probe",
-                precision_bits=prec_bits,
-                detail=(
-                    f"expression is rigorously nonzero at assumption-satisfying witness point "
-                    f"{attempt}/{num_points}: {exact_subs}"
-                ),
+                Verdict.NONZERO_LIKELY, "numeric-probe", precision_bits=prec_bits,
+                detail=(f"expression is rigorously nonzero at assumption-satisfying witness point "
+                        f"{attempt}/{num_points}: {exact_subs}"),
                 evidence="assumption-satisfying-witness",
             )
     return None
