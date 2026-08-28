@@ -1,0 +1,764 @@
+F401 [*] `math` imported but unused
+ --> tests/test_algebraic.py:1:8
+  |
+1 | import math
+  |        ^^^^
+2 | import time
+  |
+help: Remove unused import: `math`
+
+F401 [*] `time` imported but unused
+ --> tests/test_algebraic.py:2:8
+  |
+1 | import math
+2 | import time
+  |        ^^^^
+3 |
+4 | import sympy as sp
+  |
+help: Remove unused import: `time`
+
+F401 [*] `pytest` imported but unused
+ --> tests/test_algebraic.py:5:8
+  |
+4 | import sympy as sp
+5 | import pytest
+  |        ^^^^^^
+6 |
+7 | from exprtest._algebraic import exact_algebraic_number_test
+  |
+help: Remove unused import: `pytest`
+
+F401 [*] `exprtest._algebraic.exact_algebraic_number_test` imported but unused
+ --> tests/test_algebraic.py:7:33
+  |
+5 | import pytest
+6 |
+7 | from exprtest._algebraic import exact_algebraic_number_test
+  |                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+8 | from exprtest._cache import cache_clear
+9 | from exprtest._result import Verdict
+  |
+help: Remove unused import: `exprtest._algebraic.exact_algebraic_number_test`
+
+F811 [*] Redefinition of unused `exact_algebraic_number_test` from line 7
+  --> tests/test_algebraic.py:80:37
+   |
+79 | def test_exact_algebraic_pipeline_uses_relation_reduction_first():
+80 |     from exprtest._algebraic import exact_algebraic_number_test
+   |                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ `exact_algebraic_number_test` redefined here
+81 |
+82 |     t = sp.symbols("t")
+   |
+  ::: tests/test_algebraic.py:7:33
+   |
+ 5 | import pytest
+ 6 |
+ 7 | from exprtest._algebraic import exact_algebraic_number_test
+   |                                 --------------------------- previous definition of `exact_algebraic_number_test` here
+ 8 | from exprtest._cache import cache_clear
+ 9 | from exprtest._result import Verdict
+   |
+help: Remove definition: `exact_algebraic_number_test`
+
+F811 [*] Redefinition of unused `exact_algebraic_number_test` from line 7
+   --> tests/test_algebraic.py:159:37
+    |
+158 | def test_exact_pipeline_can_use_root_set_preprocessing():
+159 |     from exprtest._algebraic import exact_algebraic_number_test
+    |                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ `exact_algebraic_number_test` redefined here
+160 |
+161 |     u = sp.symbols("u")
+    |
+   ::: tests/test_algebraic.py:7:33
+    |
+  5 | import pytest
+  6 |
+  7 | from exprtest._algebraic import exact_algebraic_number_test
+    |                                 --------------------------- previous definition of `exact_algebraic_number_test` here
+  8 | from exprtest._cache import cache_clear
+  9 | from exprtest._result import Verdict
+    |
+help: Remove definition: `exact_algebraic_number_test`
+
+F401 [*] `exprtest._algebraic.algebraic_gap_bound` imported but unused
+ --> tests/test_exact_methods.py:4:33
+  |
+3 | from exprtest import ElementOf, number_kind, zerotest
+4 | from exprtest._algebraic import algebraic_gap_bound
+  |                                 ^^^^^^^^^^^^^^^^^^^
+5 | from exprtest._cache import cache_clear
+6 | from exprtest._domains import (
+  |
+help: Remove unused import: `exprtest._algebraic.algebraic_gap_bound`
+
+E402 Module level import not at top of file
+  --> tests/test_routing.py:88:1
+   |
+88 | import sympy as sp
+   | ^^^^^^^^^^^^^^^^^^
+89 |
+90 | from exprtest import zerotest
+   |
+
+F811 [*] Redefinition of unused `sp` from line 1
+  --> tests/test_routing.py:88:17
+   |
+88 | import sympy as sp
+   |                 ^^ `sp` redefined here
+89 |
+90 | from exprtest import zerotest
+   |
+  ::: tests/test_routing.py:1:17
+   |
+ 1 | import sympy as sp
+   |                 -- previous definition of `sp` here
+ 2 |
+ 3 | from exprtest import profile_zerotest, zerotest
+   |
+help: Remove definition: `sp`
+
+E402 Module level import not at top of file
+  --> tests/test_routing.py:90:1
+   |
+88 | import sympy as sp
+89 |
+90 | from exprtest import zerotest
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+91 | from exprtest._algebraic import build_algebraic_tower, tower_algebraic_test
+92 | from exprtest._call_memo import OracleMemo
+   |
+
+F811 [*] Redefinition of unused `zerotest` from line 3
+  --> tests/test_routing.py:90:22
+   |
+88 | import sympy as sp
+89 |
+90 | from exprtest import zerotest
+   |                      ^^^^^^^^ `zerotest` redefined here
+91 | from exprtest._algebraic import build_algebraic_tower, tower_algebraic_test
+92 | from exprtest._call_memo import OracleMemo
+   |
+  ::: tests/test_routing.py:3:40
+   |
+ 1 | import sympy as sp
+ 2 |
+ 3 | from exprtest import profile_zerotest, zerotest
+   |                                        -------- previous definition of `zerotest` here
+ 4 | from exprtest._algebraic import algebraic_gap_bound
+ 5 | from exprtest._algebraic import build_algebraic_tower
+   |
+help: Remove definition: `zerotest`
+
+E402 Module level import not at top of file
+  --> tests/test_routing.py:91:1
+   |
+90 | from exprtest import zerotest
+91 | from exprtest._algebraic import build_algebraic_tower, tower_algebraic_test
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+92 | from exprtest._call_memo import OracleMemo
+93 | from exprtest._defined import quick_defined_nonzero
+   |
+
+F811 [*] Redefinition of unused `build_algebraic_tower` from line 5
+  --> tests/test_routing.py:91:33
+   |
+90 | from exprtest import zerotest
+91 | from exprtest._algebraic import build_algebraic_tower, tower_algebraic_test
+   |                                 ^^^^^^^^^^^^^^^^^^^^^ `build_algebraic_tower` redefined here
+92 | from exprtest._call_memo import OracleMemo
+93 | from exprtest._defined import quick_defined_nonzero
+   |
+  ::: tests/test_routing.py:5:33
+   |
+ 3 | from exprtest import profile_zerotest, zerotest
+ 4 | from exprtest._algebraic import algebraic_gap_bound
+ 5 | from exprtest._algebraic import build_algebraic_tower
+   |                                 --------------------- previous definition of `build_algebraic_tower` here
+ 6 | from exprtest._features import expression_features
+ 7 | from exprtest._normal_forms import exp_log_normal_form, log_normal_form
+   |
+help: Remove definition: `build_algebraic_tower`
+
+E402 Module level import not at top of file
+  --> tests/test_routing.py:92:1
+   |
+90 | from exprtest import zerotest
+91 | from exprtest._algebraic import build_algebraic_tower, tower_algebraic_test
+92 | from exprtest._call_memo import OracleMemo
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+93 | from exprtest._defined import quick_defined_nonzero
+94 | from exprtest._exp_independence import exponential_independence_nonzero
+   |
+
+E402 Module level import not at top of file
+  --> tests/test_routing.py:93:1
+   |
+91 | from exprtest._algebraic import build_algebraic_tower, tower_algebraic_test
+92 | from exprtest._call_memo import OracleMemo
+93 | from exprtest._defined import quick_defined_nonzero
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+94 | from exprtest._exp_independence import exponential_independence_nonzero
+95 | from exprtest._numeric import _next_precision, _precision_from_expr
+   |
+
+E402 Module level import not at top of file
+  --> tests/test_routing.py:94:1
+   |
+92 | from exprtest._call_memo import OracleMemo
+93 | from exprtest._defined import quick_defined_nonzero
+94 | from exprtest._exp_independence import exponential_independence_nonzero
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+95 | from exprtest._numeric import _next_precision, _precision_from_expr
+96 | from exprtest._rewrite import exact_rewrite
+   |
+
+E402 Module level import not at top of file
+  --> tests/test_routing.py:95:1
+   |
+93 | from exprtest._defined import quick_defined_nonzero
+94 | from exprtest._exp_independence import exponential_independence_nonzero
+95 | from exprtest._numeric import _next_precision, _precision_from_expr
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+96 | from exprtest._rewrite import exact_rewrite
+97 | from exprtest._result import Verdict
+   |
+
+E402 Module level import not at top of file
+  --> tests/test_routing.py:96:1
+   |
+94 | from exprtest._exp_independence import exponential_independence_nonzero
+95 | from exprtest._numeric import _next_precision, _precision_from_expr
+96 | from exprtest._rewrite import exact_rewrite
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+97 | from exprtest._result import Verdict
+   |
+
+E402 Module level import not at top of file
+  --> tests/test_routing.py:97:1
+   |
+95 | from exprtest._numeric import _next_precision, _precision_from_expr
+96 | from exprtest._rewrite import exact_rewrite
+97 | from exprtest._result import Verdict
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+
+E402 Module level import not at top of file
+   --> tests/test_routing.py:163:1
+    |
+163 | import sympy as sp
+    | ^^^^^^^^^^^^^^^^^^
+164 |
+165 | from exprtest import profile_zerotest, zerotest
+    |
+
+F811 [*] Redefinition of unused `sp` from line 88
+   --> tests/test_routing.py:163:17
+    |
+163 | import sympy as sp
+    |                 ^^ `sp` redefined here
+164 |
+165 | from exprtest import profile_zerotest, zerotest
+    |
+   ::: tests/test_routing.py:88:17
+    |
+ 88 | import sympy as sp
+    |                 -- previous definition of `sp` here
+ 89 |
+ 90 | from exprtest import zerotest
+    |
+help: Remove definition: `sp`
+
+E402 Module level import not at top of file
+   --> tests/test_routing.py:165:1
+    |
+163 | import sympy as sp
+164 |
+165 | from exprtest import profile_zerotest, zerotest
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+166 | from exprtest._cache import cache_clear
+167 | from exprtest._negative_cache import special_inapplicable
+    |
+
+F811 [*] Redefinition of unused `profile_zerotest` from line 3
+   --> tests/test_routing.py:165:22
+    |
+163 | import sympy as sp
+164 |
+165 | from exprtest import profile_zerotest, zerotest
+    |                      ^^^^^^^^^^^^^^^^ `profile_zerotest` redefined here
+166 | from exprtest._cache import cache_clear
+167 | from exprtest._negative_cache import special_inapplicable
+    |
+   ::: tests/test_routing.py:3:22
+    |
+  1 | import sympy as sp
+  2 |
+  3 | from exprtest import profile_zerotest, zerotest
+    |                      ---------------- previous definition of `profile_zerotest` here
+  4 | from exprtest._algebraic import algebraic_gap_bound
+  5 | from exprtest._algebraic import build_algebraic_tower
+    |
+help: Remove definition: `profile_zerotest`
+
+F811 [*] Redefinition of unused `zerotest` from line 90
+   --> tests/test_routing.py:165:40
+    |
+163 | import sympy as sp
+164 |
+165 | from exprtest import profile_zerotest, zerotest
+    |                                        ^^^^^^^^ `zerotest` redefined here
+166 | from exprtest._cache import cache_clear
+167 | from exprtest._negative_cache import special_inapplicable
+    |
+   ::: tests/test_routing.py:90:22
+    |
+ 88 | import sympy as sp
+ 89 |
+ 90 | from exprtest import zerotest
+    |                      -------- previous definition of `zerotest` here
+ 91 | from exprtest._algebraic import build_algebraic_tower, tower_algebraic_test
+ 92 | from exprtest._call_memo import OracleMemo
+    |
+help: Remove definition: `zerotest`
+
+E402 Module level import not at top of file
+   --> tests/test_routing.py:166:1
+    |
+165 | from exprtest import profile_zerotest, zerotest
+166 | from exprtest._cache import cache_clear
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+167 | from exprtest._negative_cache import special_inapplicable
+168 | from exprtest._algebraic import algebraic_gap_bound, tower_algebraic_test
+    |
+
+E402 Module level import not at top of file
+   --> tests/test_routing.py:167:1
+    |
+165 | from exprtest import profile_zerotest, zerotest
+166 | from exprtest._cache import cache_clear
+167 | from exprtest._negative_cache import special_inapplicable
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+168 | from exprtest._algebraic import algebraic_gap_bound, tower_algebraic_test
+169 | from exprtest._special import reduce_special_values
+    |
+
+E402 Module level import not at top of file
+   --> tests/test_routing.py:168:1
+    |
+166 | from exprtest._cache import cache_clear
+167 | from exprtest._negative_cache import special_inapplicable
+168 | from exprtest._algebraic import algebraic_gap_bound, tower_algebraic_test
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+169 | from exprtest._special import reduce_special_values
+170 | from exprtest._transcendental import log_dependence_test, rational_log_test
+    |
+
+F811 [*] Redefinition of unused `algebraic_gap_bound` from line 4
+   --> tests/test_routing.py:168:33
+    |
+166 | from exprtest._cache import cache_clear
+167 | from exprtest._negative_cache import special_inapplicable
+168 | from exprtest._algebraic import algebraic_gap_bound, tower_algebraic_test
+    |                                 ^^^^^^^^^^^^^^^^^^^ `algebraic_gap_bound` redefined here
+169 | from exprtest._special import reduce_special_values
+170 | from exprtest._transcendental import log_dependence_test, rational_log_test
+    |
+   ::: tests/test_routing.py:4:33
+    |
+  3 | from exprtest import profile_zerotest, zerotest
+  4 | from exprtest._algebraic import algebraic_gap_bound
+    |                                 ------------------- previous definition of `algebraic_gap_bound` here
+  5 | from exprtest._algebraic import build_algebraic_tower
+  6 | from exprtest._features import expression_features
+    |
+help: Remove definition: `algebraic_gap_bound`
+
+F811 [*] Redefinition of unused `tower_algebraic_test` from line 91
+   --> tests/test_routing.py:168:54
+    |
+166 | from exprtest._cache import cache_clear
+167 | from exprtest._negative_cache import special_inapplicable
+168 | from exprtest._algebraic import algebraic_gap_bound, tower_algebraic_test
+    |                                                      ^^^^^^^^^^^^^^^^^^^^ `tower_algebraic_test` redefined here
+169 | from exprtest._special import reduce_special_values
+170 | from exprtest._transcendental import log_dependence_test, rational_log_test
+    |
+   ::: tests/test_routing.py:91:56
+    |
+ 90 | from exprtest import zerotest
+ 91 | from exprtest._algebraic import build_algebraic_tower, tower_algebraic_test
+    |                                                        -------------------- previous definition of `tower_algebraic_test` here
+ 92 | from exprtest._call_memo import OracleMemo
+ 93 | from exprtest._defined import quick_defined_nonzero
+    |
+help: Remove definition: `tower_algebraic_test`
+
+E402 Module level import not at top of file
+   --> tests/test_routing.py:169:1
+    |
+167 | from exprtest._negative_cache import special_inapplicable
+168 | from exprtest._algebraic import algebraic_gap_bound, tower_algebraic_test
+169 | from exprtest._special import reduce_special_values
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+170 | from exprtest._transcendental import log_dependence_test, rational_log_test
+171 | from exprtest._result import Verdict
+    |
+
+E402 Module level import not at top of file
+   --> tests/test_routing.py:170:1
+    |
+168 | from exprtest._algebraic import algebraic_gap_bound, tower_algebraic_test
+169 | from exprtest._special import reduce_special_values
+170 | from exprtest._transcendental import log_dependence_test, rational_log_test
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+171 | from exprtest._result import Verdict
+    |
+
+E402 Module level import not at top of file
+   --> tests/test_routing.py:171:1
+    |
+169 | from exprtest._special import reduce_special_values
+170 | from exprtest._transcendental import log_dependence_test, rational_log_test
+171 | from exprtest._result import Verdict
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+
+F811 [*] Redefinition of unused `Verdict` from line 97
+   --> tests/test_routing.py:171:30
+    |
+169 | from exprtest._special import reduce_special_values
+170 | from exprtest._transcendental import log_dependence_test, rational_log_test
+171 | from exprtest._result import Verdict
+    |                              ^^^^^^^ `Verdict` redefined here
+    |
+   ::: tests/test_routing.py:97:30
+    |
+ 95 | from exprtest._numeric import _next_precision, _precision_from_expr
+ 96 | from exprtest._rewrite import exact_rewrite
+ 97 | from exprtest._result import Verdict
+    |                              ------- previous definition of `Verdict` here
+    |
+help: Remove definition: `Verdict`
+
+F401 [*] `math` imported but unused
+ --> tests/test_transcendental.py:1:8
+  |
+1 | import math
+  |        ^^^^
+2 | import time
+  |
+help: Remove unused import: `math`
+
+F401 [*] `time` imported but unused
+ --> tests/test_transcendental.py:2:8
+  |
+1 | import math
+2 | import time
+  |        ^^^^
+3 |
+4 | import sympy as sp
+  |
+help: Remove unused import: `time`
+
+F401 [*] `pytest` imported but unused
+ --> tests/test_transcendental.py:5:8
+  |
+4 | import sympy as sp
+5 | import pytest
+  |        ^^^^^^
+6 |
+7 | from exprtest import ElementOf, Verdict, number_kind, profile_zerotest, zerotest
+  |
+help: Remove unused import: `pytest`
+
+F401 [*] `exprtest.ElementOf` imported but unused
+ --> tests/test_transcendental.py:7:22
+  |
+5 | import pytest
+6 |
+7 | from exprtest import ElementOf, Verdict, number_kind, profile_zerotest, zerotest
+  |                      ^^^^^^^^^
+8 | from exprtest._cache import cache_clear
+9 | from exprtest._domains import Algebraics, NumberKind
+  |
+help: Remove unused import
+
+F401 [*] `exprtest.number_kind` imported but unused
+ --> tests/test_transcendental.py:7:42
+  |
+5 | import pytest
+6 |
+7 | from exprtest import ElementOf, Verdict, number_kind, profile_zerotest, zerotest
+  |                                          ^^^^^^^^^^^
+8 | from exprtest._cache import cache_clear
+9 | from exprtest._domains import Algebraics, NumberKind
+  |
+help: Remove unused import
+
+F401 [*] `exprtest._domains.Algebraics` imported but unused
+  --> tests/test_transcendental.py:9:31
+   |
+ 7 | from exprtest import ElementOf, Verdict, number_kind, profile_zerotest, zerotest
+ 8 | from exprtest._cache import cache_clear
+ 9 | from exprtest._domains import Algebraics, NumberKind
+   |                               ^^^^^^^^^^
+10 |
+11 | x, y, z = sp.symbols("x y z")
+   |
+help: Remove unused import
+
+F401 [*] `exprtest._domains.NumberKind` imported but unused
+  --> tests/test_transcendental.py:9:43
+   |
+ 7 | from exprtest import ElementOf, Verdict, number_kind, profile_zerotest, zerotest
+ 8 | from exprtest._cache import cache_clear
+ 9 | from exprtest._domains import Algebraics, NumberKind
+   |                                           ^^^^^^^^^^
+10 |
+11 | x, y, z = sp.symbols("x y z")
+   |
+help: Remove unused import
+
+F811 [*] Redefinition of unused `number_kind` from line 7
+   --> tests/test_transcendental.py:225:26
+    |
+224 | def test_number_kind_uses_cheap_transcendence_theorems():
+225 |     from exprtest import number_kind
+    |                          ^^^^^^^^^^^ `number_kind` redefined here
+226 |     from exprtest._domains import NumberKind
+    |
+   ::: tests/test_transcendental.py:7:42
+    |
+  5 | import pytest
+  6 |
+  7 | from exprtest import ElementOf, Verdict, number_kind, profile_zerotest, zerotest
+    |                                          ----------- previous definition of `number_kind` here
+  8 | from exprtest._cache import cache_clear
+  9 | from exprtest._domains import Algebraics, NumberKind
+    |
+help: Remove definition: `number_kind`
+
+F811 [*] Redefinition of unused `NumberKind` from line 9
+   --> tests/test_transcendental.py:226:35
+    |
+224 | def test_number_kind_uses_cheap_transcendence_theorems():
+225 |     from exprtest import number_kind
+226 |     from exprtest._domains import NumberKind
+    |                                   ^^^^^^^^^^ `NumberKind` redefined here
+227 |
+228 |     assert number_kind(sp.sqrt(2)) is NumberKind.ALGEBRAIC
+    |
+   ::: tests/test_transcendental.py:9:43
+    |
+  7 | from exprtest import ElementOf, Verdict, number_kind, profile_zerotest, zerotest
+  8 | from exprtest._cache import cache_clear
+  9 | from exprtest._domains import Algebraics, NumberKind
+    |                                           ---------- previous definition of `NumberKind` here
+ 10 |
+ 11 | x, y, z = sp.symbols("x y z")
+    |
+help: Remove definition: `NumberKind`
+
+F811 [*] Redefinition of unused `number_kind` from line 7
+   --> tests/test_transcendental.py:237:26
+    |
+236 | def test_number_kind_does_not_combine_two_transcendentals_unsafely():
+237 |     from exprtest import number_kind
+    |                          ^^^^^^^^^^^ `number_kind` redefined here
+238 |     from exprtest._domains import NumberKind
+    |
+   ::: tests/test_transcendental.py:7:42
+    |
+  5 | import pytest
+  6 |
+  7 | from exprtest import ElementOf, Verdict, number_kind, profile_zerotest, zerotest
+    |                                          ----------- previous definition of `number_kind` here
+  8 | from exprtest._cache import cache_clear
+  9 | from exprtest._domains import Algebraics, NumberKind
+    |
+help: Remove definition: `number_kind`
+
+F811 [*] Redefinition of unused `NumberKind` from line 9
+   --> tests/test_transcendental.py:238:35
+    |
+236 | def test_number_kind_does_not_combine_two_transcendentals_unsafely():
+237 |     from exprtest import number_kind
+238 |     from exprtest._domains import NumberKind
+    |                                   ^^^^^^^^^^ `NumberKind` redefined here
+239 |
+240 |     term = sp.Add(sp.pi, -sp.pi, evaluate=False)
+    |
+   ::: tests/test_transcendental.py:9:43
+    |
+  7 | from exprtest import ElementOf, Verdict, number_kind, profile_zerotest, zerotest
+  8 | from exprtest._cache import cache_clear
+  9 | from exprtest._domains import Algebraics, NumberKind
+    |                                           ---------- previous definition of `NumberKind` here
+ 10 |
+ 11 | x, y, z = sp.symbols("x y z")
+    |
+help: Remove definition: `NumberKind`
+
+F811 [*] Redefinition of unused `ElementOf` from line 7
+   --> tests/test_transcendental.py:245:26
+    |
+244 | def test_elementof_strips_stable_domain_parts():
+245 |     from exprtest import ElementOf
+    |                          ^^^^^^^^^ `ElementOf` redefined here
+246 |
+247 |     x = sp.symbols("x")
+    |
+   ::: tests/test_transcendental.py:7:22
+    |
+  5 | import pytest
+  6 |
+  7 | from exprtest import ElementOf, Verdict, number_kind, profile_zerotest, zerotest
+    |                      --------- previous definition of `ElementOf` here
+  8 | from exprtest._cache import cache_clear
+  9 | from exprtest._domains import Algebraics, NumberKind
+    |
+help: Remove definition: `ElementOf`
+
+F811 [*] Redefinition of unused `ElementOf` from line 7
+   --> tests/test_transcendental.py:257:26
+    |
+256 | def test_elementof_uses_transcendence_for_algebraic_membership():
+257 |     from exprtest import ElementOf
+    |                          ^^^^^^^^^ `ElementOf` redefined here
+258 |     from exprtest._domains import Algebraics
+    |
+   ::: tests/test_transcendental.py:7:22
+    |
+  5 | import pytest
+  6 |
+  7 | from exprtest import ElementOf, Verdict, number_kind, profile_zerotest, zerotest
+    |                      --------- previous definition of `ElementOf` here
+  8 | from exprtest._cache import cache_clear
+  9 | from exprtest._domains import Algebraics, NumberKind
+    |
+help: Remove definition: `ElementOf`
+
+F811 [*] Redefinition of unused `Algebraics` from line 9
+   --> tests/test_transcendental.py:258:35
+    |
+256 | def test_elementof_uses_transcendence_for_algebraic_membership():
+257 |     from exprtest import ElementOf
+258 |     from exprtest._domains import Algebraics
+    |                                   ^^^^^^^^^^ `Algebraics` redefined here
+259 |
+260 |     assert ElementOf(sp.pi, Algebraics) is False
+    |
+   ::: tests/test_transcendental.py:9:31
+    |
+  7 | from exprtest import ElementOf, Verdict, number_kind, profile_zerotest, zerotest
+  8 | from exprtest._cache import cache_clear
+  9 | from exprtest._domains import Algebraics, NumberKind
+    |                               ---------- previous definition of `Algebraics` here
+ 10 |
+ 11 | x, y, z = sp.symbols("x y z")
+    |
+help: Remove definition: `Algebraics`
+
+F811 [*] Redefinition of unused `ElementOf` from line 7
+   --> tests/test_transcendental.py:282:26
+    |
+281 | def test_elementof_does_not_strip_nonunit_integer_factor():
+282 |     from exprtest import ElementOf
+    |                          ^^^^^^^^^ `ElementOf` redefined here
+283 |
+284 |     x = sp.symbols("x")
+    |
+   ::: tests/test_transcendental.py:7:22
+    |
+  5 | import pytest
+  6 |
+  7 | from exprtest import ElementOf, Verdict, number_kind, profile_zerotest, zerotest
+    |                      --------- previous definition of `ElementOf` here
+  8 | from exprtest._cache import cache_clear
+  9 | from exprtest._domains import Algebraics, NumberKind
+    |
+help: Remove definition: `ElementOf`
+
+F811 [*] Redefinition of unused `ElementOf` from line 7
+   --> tests/test_transcendental.py:300:26
+    |
+299 | def test_elementof_reduces_rational_power_for_algebraic_membership():
+300 |     from exprtest import ElementOf
+    |                          ^^^^^^^^^ `ElementOf` redefined here
+301 |     from exprtest._domains import Algebraics
+    |
+   ::: tests/test_transcendental.py:7:22
+    |
+  5 | import pytest
+  6 |
+  7 | from exprtest import ElementOf, Verdict, number_kind, profile_zerotest, zerotest
+    |                      --------- previous definition of `ElementOf` here
+  8 | from exprtest._cache import cache_clear
+  9 | from exprtest._domains import Algebraics, NumberKind
+    |
+help: Remove definition: `ElementOf`
+
+F811 [*] Redefinition of unused `Algebraics` from line 9
+   --> tests/test_transcendental.py:301:35
+    |
+299 | def test_elementof_reduces_rational_power_for_algebraic_membership():
+300 |     from exprtest import ElementOf
+301 |     from exprtest._domains import Algebraics
+    |                                   ^^^^^^^^^^ `Algebraics` redefined here
+302 |
+303 |     x = sp.symbols("x")
+    |
+   ::: tests/test_transcendental.py:9:31
+    |
+  7 | from exprtest import ElementOf, Verdict, number_kind, profile_zerotest, zerotest
+  8 | from exprtest._cache import cache_clear
+  9 | from exprtest._domains import Algebraics, NumberKind
+    |                               ---------- previous definition of `Algebraics` here
+ 10 |
+ 11 | x, y, z = sp.symbols("x y z")
+    |
+help: Remove definition: `Algebraics`
+
+F811 [*] Redefinition of unused `number_kind` from line 7
+   --> tests/test_transcendental.py:309:26
+    |
+308 | def test_gelfond_schneider_power_kind_and_difference():
+309 |     from exprtest import number_kind, zerotest
+    |                          ^^^^^^^^^^^ `number_kind` redefined here
+310 |     from exprtest._domains import NumberKind
+    |
+   ::: tests/test_transcendental.py:7:42
+    |
+  5 | import pytest
+  6 |
+  7 | from exprtest import ElementOf, Verdict, number_kind, profile_zerotest, zerotest
+    |                                          ----------- previous definition of `number_kind` here
+  8 | from exprtest._cache import cache_clear
+  9 | from exprtest._domains import Algebraics, NumberKind
+    |
+help: Remove definition: `number_kind`
+
+F811 [*] Redefinition of unused `NumberKind` from line 9
+   --> tests/test_transcendental.py:310:35
+    |
+308 | def test_gelfond_schneider_power_kind_and_difference():
+309 |     from exprtest import number_kind, zerotest
+310 |     from exprtest._domains import NumberKind
+    |                                   ^^^^^^^^^^ `NumberKind` redefined here
+311 |
+312 |     value = sp.Pow(2, sp.sqrt(2), evaluate=False)
+    |
+   ::: tests/test_transcendental.py:9:43
+    |
+  7 | from exprtest import ElementOf, Verdict, number_kind, profile_zerotest, zerotest
+  8 | from exprtest._cache import cache_clear
+  9 | from exprtest._domains import Algebraics, NumberKind
+    |                                           ---------- previous definition of `NumberKind` here
+ 10 |
+ 11 | x, y, z = sp.symbols("x y z")
+    |
+help: Remove definition: `NumberKind`
+
+Found 52 errors.
+[*] 35 fixable with the `--fix` option.

@@ -1,0 +1,142 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  core:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e ".[test]"
+      - run: pytest -m "not flint and not scipy_compat"
+      - run: python examples/quickstart.py
+
+  minimum-dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e . "sympy==1.12" "mpmath==1.3.0" "pytest==7.0.0"
+      - run: pytest -m "not flint and not scipy_compat"
+      - run: python examples/quickstart.py
+
+  flint:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.12", "3.14"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e ".[dev]"
+      - run: pytest -m "not scipy_compat"
+
+  minimum-flint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e . "sympy==1.12" "mpmath==1.3.0" "pytest==7.0.0" "python-flint==0.5.0"
+      - run: pytest -m "not scipy_compat"
+
+  platform-smoke:
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e ".[dev]"
+      - run: pytest tests/test_release_gate.py tests/test_oracle.py tests/test_routing.py
+      - run: python examples/quickstart.py
+
+
+  scipy-compat:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e ".[test]" scipy
+      - run: pytest -m scipy_compat tests/test_scipy_function_compat.py
+
+
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e ".[test]"
+      - run: pytest -m "not flint and not scipy_compat" --cov=exprtest --cov-branch --cov-report=term-missing --cov-report=xml
+      - uses: actions/upload-artifact@v4
+        with:
+          name: branch-coverage
+          path: coverage.xml
+
+  structural-performance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e ".[test]"
+      - run: pytest -m performance_contract tests/test_performance_contract.py
+
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e .
+      - run: python benchmarks/benchmark_zerotest.py | tee benchmark.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zerotest-benchmark
+          path: benchmark.txt
+
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip build twine
+      - run: python -m build
+      - run: python -m twine check dist/*
+      - run: python -m pip install --no-deps --force-reinstall dist/*.whl
+      - run: python -c "import exprtest; print(exprtest.__version__)"
+      - run: python -c "from pathlib import Path; import exprtest; assert (Path(exprtest.__file__).parent / 'py.typed').exists()"
+      - run: python tests/smoke_test.py
