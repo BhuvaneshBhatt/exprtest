@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="68" skipped="2" tests="320" time="25.756" timestamp="2026-10-18T21:04:06.747487" hostname="bbhattmaclap"><testcase classname="tests.test_algebraic" name="test_algebraic_expression_classifier_rejects_inexact_values" time="0.001" /><testcase classname="tests.test_algebraic" name="test_algebraic_model_extracts_generators_and_minpolys" time="0.007" /><testcase classname="tests.test_algebraic" name="test_minpoly_remainder_proves_root_relation_without_common_field" time="0.022"><failure message="AssertionError: assert &lt;Verdict.UNKNOWN: 'could not determine'&gt; is &lt;Verdict.ZERO_PROVEN: 'zero (proven)'&gt;&#10; +  where &lt;Verdict.UNKNOWN: 'could not determine'&gt; = &lt;ZeroClassification could not determine via algebraic-remainder: could not build an algebraic generator model&gt;.verdict&#10; +  and   &lt;Verdict.ZERO_PROVEN: 'zero (proven)'&gt; = Verdict.ZERO_PROVEN">def test_minpoly_remainder_proves_root_relation_without_common_field():
         from exprtest._algebraic import algebraic_relation_reduction_test
-    
+
         t = sp.symbols("t")
         root = sp.CRootOf(t**3 - 2, 0)
         expr = sp.Add(sp.Pow(root, 3, evaluate=False), -2, evaluate=False)
@@ -12,7 +12,7 @@ E        +  and   &lt;Verdict.ZERO_PROVEN: 'zero (proven)'&gt; = Verdict.ZERO_PR
 
 work/min-baseline/tests/test_algebraic.py:47: AssertionError</failure></testcase><testcase classname="tests.test_algebraic" name="test_nonzero_independent_generator_remainder_is_inconclusive" time="0.005" /><testcase classname="tests.test_algebraic" name="test_common_number_field_resolves_generator_dependency" time="0.035" /><testcase classname="tests.test_algebraic" name="test_common_number_field_proves_nonzero_algebraic_value" time="0.009" /><testcase classname="tests.test_algebraic" name="test_exact_algebraic_pipeline_uses_relation_reduction_first" time="0.029"><failure message="AssertionError: assert &lt;Verdict.UNKNOWN: 'could not determine'&gt; is &lt;Verdict.ZERO_PROVEN: 'zero (proven)'&gt;&#10; +  where &lt;Verdict.UNKNOWN: 'could not determine'&gt; = &lt;ZeroClassification could not determine via algebraic: expression is not known to be algebraic&gt;.verdict&#10; +  and   &lt;Verdict.ZERO_PROVEN: 'zero (proven)'&gt; = Verdict.ZERO_PROVEN">def test_exact_algebraic_pipeline_uses_relation_reduction_first():
         from exprtest._algebraic import exact_algebraic_number_test
-    
+
         t = sp.symbols("t")
         root = sp.CRootOf(t**4 - 10, 0)
         expr = sp.Add(sp.Pow(root, 4, evaluate=False), -10, evaluate=False)
@@ -24,7 +24,7 @@ E        +  and   &lt;Verdict.ZERO_PROVEN: 'zero (proven)'&gt; = Verdict.ZERO_PR
 
 work/min-baseline/tests/test_algebraic.py:81: AssertionError</failure></testcase><testcase classname="tests.test_algebraic" name="test_complete_root_set_uses_symmetric_coefficient_identities" time="0.010" /><testcase classname="tests.test_algebraic" name="test_majority_root_set_rewrites_through_complement" time="0.266" /><testcase classname="tests.test_algebraic" name="test_half_or_smaller_root_set_is_left_unchanged" time="0.003" /><testcase classname="tests.test_algebraic" name="test_majority_root_product_uses_complement" time="0.013" /><testcase classname="tests.test_algebraic" name="test_rational_radicals_share_prime_power_basis" time="0.002" /><testcase classname="tests.test_algebraic" name="test_algebraic_gap_bound_is_positive_and_valid" time="0.008" /><testcase classname="tests.test_algebraic" name="test_algebraic_gap_test_proves_nonzero" time="0.003" /><testcase classname="tests.test_algebraic" name="test_exact_pipeline_can_use_root_set_preprocessing" time="10.231"><failure message="AssertionError: assert &lt;Verdict.UNKNOWN: 'could not determine'&gt; is &lt;Verdict.ZERO_PROVEN: 'zero (proven)'&gt;&#10; +  where &lt;Verdict.UNKNOWN: 'could not determine'&gt; = &lt;ZeroClassification could not determine via algebraic: expression is not known to be algebraic&gt;.verdict&#10; +  and   &lt;Verdict.ZERO_PROVEN: 'zero (proven)'&gt; = Verdict.ZERO_PROVEN">def test_exact_pipeline_can_use_root_set_preprocessing():
         from exprtest._algebraic import exact_algebraic_number_test
-    
+
         u = sp.symbols("u")
         roots = [sp.CRootOf(u**3 - u + 1, pos) for pos in range(3)]
         result = exact_algebraic_number_test(sum(roots))
@@ -35,7 +35,7 @@ E        +  and   &lt;Verdict.ZERO_PROVEN: 'zero (proven)'&gt; = Verdict.ZERO_PR
 
 work/min-baseline/tests/test_algebraic.py:159: AssertionError</failure></testcase><testcase classname="tests.test_algebraic" name="test_nested_radical_tower_reduces_defining_relation" time="0.006" /><testcase classname="tests.test_algebraic" name="test_nested_radical_tower_can_prove_real_sign" time="0.002" /><testcase classname="tests.test_algebraic" name="test_fujiwara_candidate_can_improve_cauchy_gap" time="0.003"><failure message="assert None is not None">def test_fujiwara_candidate_can_improve_cauchy_gap():
         from exprtest._algebraic import algebraic_gap_bound
-    
+
         u = sp.symbols("u")
         root = sp.CRootOf(100 * u**3 + 1, 0)
         gap = algebraic_gap_bound(root)
@@ -44,7 +44,7 @@ E       assert None is not None
 
 work/min-baseline/tests/test_algebraic.py:197: AssertionError</failure></testcase><testcase classname="tests.test_algebraic" name="test_gap_bound_never_exceeds_sampled_root_magnitude" time="0.002"><failure message="assert None is not None">def test_gap_bound_never_exceeds_sampled_root_magnitude():
         from exprtest._algebraic import algebraic_gap_bound
-    
+
         u = sp.symbols("u")
         roots = [sp.CRootOf(100 * u**3 + 1, pos) for pos in range(3)]
         for root in roots:
@@ -54,7 +54,7 @@ E           assert None is not None
 
 work/min-baseline/tests/test_algebraic.py:209: AssertionError</failure></testcase><testcase classname="tests.test_algebraic" name="test_algebraic_model_prunes_cancelled_generators" time="0.003" /><testcase classname="tests.test_algebraic" name="test_high_power_algebraic_reduction_uses_exact_modular_powering" time="0.018"><failure message="AssertionError: assert &lt;Verdict.UNKNOWN: 'could not determine'&gt; is &lt;Verdict.ZERO_PROVEN: 'zero (proven)'&gt;&#10; +  where &lt;Verdict.UNKNOWN: 'could not determine'&gt; = &lt;ZeroClassification could not determine via algebraic-remainder: could not build an algebraic generator model&gt;.verdict&#10; +  and   &lt;Verdict.ZERO_PROVEN: 'zero (proven)'&gt; = Verdict.ZERO_PROVEN">def test_high_power_algebraic_reduction_uses_exact_modular_powering():
         from exprtest._algebraic import algebraic_relation_reduction_test
-    
+
         t = sp.symbols("t")
         root = sp.CRootOf(t**2 - 2, 0)
         expr = sp.Add(

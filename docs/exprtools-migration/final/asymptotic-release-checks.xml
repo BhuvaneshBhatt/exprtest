@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="8" skipped="0" tests="28" time="3.606" timestamp="2026-10-18T21:10:51.372076-05:00" hostname="bbhattmaclap"><testcase classname="tests.test_publish_workflow" name="test_publish_workflow_uses_trusted_publishing_after_release_gates" time="0.001"><failure message="assert 'python tools/run_test_shard.py' in 'name: publish-to-pypi\n\non:\n  push:\n    tags:\n      - &quot;v*&quot;\n\npermissions:\n  contents: read\n\njobs:\n  build:\n...ith:\n          name: pypi-distributions\n          path: dist\n      - uses: pypa/gh-action-pypi-publish@release/v1\n'">def test_publish_workflow_uses_trusted_publishing_after_release_gates():
         text = Path(".github/workflows/publish.yml").read_text()
-    
+
         assert "tags:" in text and '"v*"' in text
         assert "Require tag to match package version" in text
 &gt;       assert "python tools/run_test_shard.py" in text
@@ -43,14 +43,14 @@ tests/test_release_metadata.py:23: AssertionError</failure></testcase><testcase 
                     violations[str(path)] = retired
 &gt;       assert violations == {}
 E       AssertionError: assert {'tests/test_...r_expansion']} == {}
-E         
+E
 E         Left contains 1 more item:
 E         {'tests/test_order_remainder_limit_policy.py': ['order_expansion']}
 E         Use -v to get more diff
 
 tests/test_root_import_boundaries.py:35: AssertionError</failure></testcase><testcase classname="tests.test_root_import_boundaries" name="test_documentation_python_fences_use_only_primary_root_imports" time="0.010" /><testcase classname="tests.test_suite_layout" name="test_every_test_module_belongs_to_one_shard" time="0.010" /><testcase classname="tests.test_suite_layout" name="test_every_module_has_known_cost_class" time="0.000" /><testcase classname="tests.test_suite_layout" name="test_every_cost_class_has_an_execution_budget" time="0.000" /><testcase classname="tests.test_suite_layout" name="test_reference_corpus_is_explicitly_budgeted" time="0.000" /><testcase classname="tests.test_repository_coherence" name="test_production_proof_boundaries" time="0.708" /><testcase classname="tests.test_repository_coherence" name="test_tests_do_not_use_monkeypatch_fixture" time="0.188"><failure message="AssertionError: assert ['tests/test_...policy.py:45'] == []&#10;  &#10;  Left contains 3 more items, first extra item: 'tests/test_order_remainder_limit_policy.py:11'&#10;  Use -v to get more diff">def test_tests_do_not_use_monkeypatch_fixture():
         import ast
-    
+
         hits = []
         fixture_name = "monkey" + "patch"
         for path in (ROOT / "tests").glob("test_*.py"):
@@ -62,17 +62,17 @@ tests/test_root_import_boundaries.py:35: AssertionError</failure></testcase><tes
                         hits.append(f"{path.relative_to(ROOT)}:{node.lineno}")
 &gt;       assert hits == []
 E       AssertionError: assert ['tests/test_...policy.py:45'] == []
-E         
+E
 E         Left contains 3 more items, first extra item: 'tests/test_order_remainder_limit_policy.py:11'
 E         Use -v to get more diff
 
 tests/test_repository_coherence.py:52: AssertionError</failure></testcase><testcase classname="tests.test_repository_coherence" name="test_production_scopes_have_no_overridden_function_definitions" time="0.438" /><testcase classname="tests.test_repository_coherence" name="test_local_names_and_parameters_remain_readable_and_compact" time="0.753" /><testcase classname="tests.test_repository_coherence" name="test_active_text_has_no_trailing_whitespace" time="0.054" /><testcase classname="tests.test_repository_coherence" name="test_project_identity_and_license_are_consistent" time="0.001" /><testcase classname="tests.test_repository_coherence" name="test_sum_method_registry_is_shared_with_statistics" time="0.000" /><testcase classname="tests.test_repository_coherence" name="test_pyproject_prerelease_extras_and_pytest_config_are_valid" time="0.001"><failure message="AssertionError: assert {'docs', 'release', 'test'} &lt;= dict_keys(['flint', 'optimization', 'ode', 'test', 'release', 'benchmark', 'lint'])&#10; +  where dict_keys(['flint', 'optimization', 'ode', 'test', 'release', 'benchmark', 'lint']) = &lt;built-in method keys of dict object at 0x10a5f1600&gt;()&#10; +    where &lt;built-in method keys of dict object at 0x10a5f1600&gt; = {'flint': ['python-flint&gt;=0.9.0'], 'optimization': ['symbopt&gt;=0.1.0'], 'ode': ['odeanalysis&gt;=0.1.0'], 'test': ['pytest&gt;=8', 'hypothesis&gt;=6'], ...}.keys">def test_pyproject_prerelease_extras_and_pytest_config_are_valid():
         import tomllib
-    
+
         raw = (ROOT / "pyproject.toml").read_bytes()
         project = tomllib.loads(raw.decode("utf-8"))
         extras = project["project"]["optional-dependencies"]
-    
+
 &gt;       assert {"test", "docs", "release"} &lt;= extras.keys()
 E       AssertionError: assert {'docs', 'release', 'test'} &lt;= dict_keys(['flint', 'optimization', 'ode', 'test', 'release', 'benchmark', 'lint'])
 E        +  where dict_keys(['flint', 'optimization', 'ode', 'test', 'release', 'benchmark', 'lint']) = &lt;built-in method keys of dict object at 0x10a5f1600&gt;()
