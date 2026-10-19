@@ -4,9 +4,12 @@ SymPy families are available by default. External packages bind their own heads
 using RecurrenceFamilies; omitted roles are unavailable. No global registration,
 function-name matching, or dependency on a limit engine is used.
 """
+
 from dataclasses import dataclass
 from typing import ClassVar
+
 import sympy as sp
+
 
 @dataclass(frozen=True)
 class RecurrenceFamilies:
@@ -18,6 +21,7 @@ class RecurrenceFamilies:
     denominator through guard, or raise ValueError to refuse a transformation.
     Instances are per call; registration never mutates process-global state.
     """
+
     RegularizedHypergeometric0F1: object = None
     HypergeometricU: object = None
     KelvinBei: object = None
@@ -48,55 +52,67 @@ class RecurrenceFamilies:
 
     @property
     def KELVIN(self):
-        return tuple(h for h in (self.KelvinBer, self.KelvinBei, self.KelvinKer, self.KelvinKei) if h is not None)
+        return tuple(
+            h
+            for h in (self.KelvinBer, self.KelvinBei, self.KelvinKer, self.KelvinKei)
+            if h is not None
+        )
 
     @property
     def EXTRA_HEADS(self):
-        return tuple(h for h in (
-    self.LegendreQ,
-    *self.KELVIN,
-    sp.Ynm,
-    sp.lowergamma,
-    sp.harmonic,
-    sp.lerchphi,
-    sp.factorial,
-    sp.rf,
-    sp.ff,
-    sp.subfactorial,
-    sp.bernoulli,
-    sp.euler,
-    self.StruveH,
-    self.StruveL,
-    self.RegularizedHypergeometric0F1,
-    self.ParabolicCylinderD,
-    self.HypergeometricU,
-    self.WhittakerM,
-    self.WhittakerW,
-    self.RegularizedHypergeometric1F1,
-    self.RegularizedHypergeometric2F1,
-    *self.POLYNOMIALS,
-    sp.hyper,
-) if h is not None)
+        return tuple(
+            h
+            for h in (
+                self.LegendreQ,
+                *self.KELVIN,
+                sp.Ynm,
+                sp.lowergamma,
+                sp.harmonic,
+                sp.lerchphi,
+                sp.factorial,
+                sp.rf,
+                sp.ff,
+                sp.subfactorial,
+                sp.bernoulli,
+                sp.euler,
+                self.StruveH,
+                self.StruveL,
+                self.RegularizedHypergeometric0F1,
+                self.ParabolicCylinderD,
+                self.HypergeometricU,
+                self.WhittakerM,
+                self.WhittakerW,
+                self.RegularizedHypergeometric1F1,
+                self.RegularizedHypergeometric2F1,
+                *self.POLYNOMIALS,
+                sp.hyper,
+            )
+            if h is not None
+        )
 
     @property
     def TWO_BASIS(self):
-        return tuple(h for h in (
-    self.LegendreQ,
-    *self.KELVIN,
-    sp.Ynm,
-    self.ParabolicCylinderD,
-    self.HypergeometricU,
-    self.WhittakerM,
-    self.WhittakerW,
-    self.RegularizedHypergeometric1F1,
-    self.RegularizedHypergeometric2F1,
-    sp.subfactorial,
-    *self.POLYNOMIALS,
-    self.StruveH,
-    self.StruveL,
-    self.RegularizedHypergeometric0F1,
-    sp.hyper,
-) if h is not None)
+        return tuple(
+            h
+            for h in (
+                self.LegendreQ,
+                *self.KELVIN,
+                sp.Ynm,
+                self.ParabolicCylinderD,
+                self.HypergeometricU,
+                self.WhittakerM,
+                self.WhittakerW,
+                self.RegularizedHypergeometric1F1,
+                self.RegularizedHypergeometric2F1,
+                sp.subfactorial,
+                *self.POLYNOMIALS,
+                self.StruveH,
+                self.StruveL,
+                self.RegularizedHypergeometric0F1,
+                sp.hyper,
+            )
+            if h is not None
+        )
 
     def signatures(self, atom):
         h = atom.func
@@ -143,7 +159,6 @@ class RecurrenceFamilies:
             return []
         return [(a[1:], a[0])]
 
-
     def function_at(self, head, key, parameter):
         if head is self.RegularizedHypergeometric2F1 and key[0] == "c":
             return head(key[1], key[2], parameter, key[3])
@@ -167,7 +182,6 @@ class RecurrenceFamilies:
         if kind == "2f1_c":
             return sp.hyper((key[1], key[2]), (parameter,), key[3])
         return sp.hyper((parameter, key[1]), (key[2],), key[3])
-
 
     def next_basis(self, head, key, a0, k, basis, guard):
         """Return one upward step, raising ValueError if a denominator is unproved."""
@@ -255,7 +269,9 @@ class RecurrenceFamilies:
                     (p - a) * (p - b) * z,
                 )
             b, c, z = key
-            return divide((c - p) * left + (2 * p - c + (b - p) * z) * middle, p * (1 - z))
+            return divide(
+                (c - p) * left + (2 * p - c + (b - p) * z) * middle, p * (1 - z)
+            )
         if head in (sp.hermite, sp.hermite_prob):
             return (2 if head is sp.hermite else 1) * (key[0] * middle - p * left)
         if head in (sp.chebyshevt, sp.chebyshevu):
@@ -270,7 +286,9 @@ class RecurrenceFamilies:
             return divide((2 * p + alpha + 1 - z) * middle - (p + alpha) * left, p + 1)
         if head is sp.gegenbauer:
             alpha, z = key
-            return divide(2 * (p + alpha) * z * middle - (p + 2 * alpha - 1) * left, p + 1)
+            return divide(
+                2 * (p + alpha) * z * middle - (p + 2 * alpha - 1) * left, p + 1
+            )
         if head is sp.jacobi:
             a, b, z = key
             t = 2 * p + a + b
@@ -305,5 +323,6 @@ class RecurrenceFamilies:
             )
         b, c, z = key[1:]
         return divide((c - p) * left + (2 * p - c + (b - p) * z) * middle, p * (1 - z))
+
 
 DEFAULT_FAMILIES = RecurrenceFamilies()

@@ -32,3 +32,36 @@ __all__ = [
     "profile_zerotest",
     "zerotest",
 ]
+
+# General expression tools do not participate in the predicate proof cascade.
+from .context import MathematicalContext
+from .evidence import TransformationEvidence
+from .recurrence import (
+    RecurrenceFamilies,
+    RecurrenceSimplificationResult,
+    simplify_recurrences,
+)
+from .refinement import refine
+from .simplification import (
+    DEFAULT_REGISTRY,
+    SimplificationBudget,
+    SimplificationResult,
+    Transformation,
+    TransformationRegistry,
+    simplify,
+)
+
+__all__ += [
+    "MathematicalContext",
+    "TransformationEvidence",
+    "RecurrenceFamilies",
+    "RecurrenceSimplificationResult",
+    "simplify_recurrences",
+    "refine",
+    "simplify",
+    "SimplificationBudget",
+    "SimplificationResult",
+    "Transformation",
+    "TransformationRegistry",
+    "DEFAULT_REGISTRY",
+]

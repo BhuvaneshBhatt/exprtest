@@ -10,7 +10,8 @@ from dataclasses import dataclass
 
 import sympy as sp
 
-from ._recurrence_families import DEFAULT_FAMILIES, RecurrenceFamilies
+from ._recurrence_families import DEFAULT_FAMILIES
+from ._recurrence_families import RecurrenceFamilies as RecurrenceFamilies
 from .evidence import TransformationEvidence
 
 
