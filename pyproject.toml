@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "exprtest"
-version = "0.1.0"
+version = "0.2.0"
 description = "Fast symbolic expression predicates with exact, numeric, and heuristic methods."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -24,8 +24,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Mathematics",
 ]
 dependencies = [
-    "sympy>=1.12",
-    "mpmath>=1.3",
+    "exprtools>=0.1.0",
 ]
 
 [project.optional-dependencies]
@@ -39,7 +38,7 @@ dev = ["pytest>=7.0", "pytest-cov>=4.1", "python-flint>=0.5", "build>=1.2", "twi
 where = ["src"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests", "exprtools/tests"]
 markers = [
     "flint: requires the python-flint rigorous numeric backend",
     "performance_contract: structural performance/refusal contracts with generous CI ceilings",
@@ -57,7 +56,7 @@ exprtest = ["py.typed"]
 
 [tool.coverage.run]
 branch = true
-source = ["exprtest"]
+source = ["exprtest", "exprtools"]
 
 [tool.coverage.report]
 show_missing = true

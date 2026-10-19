@@ -1,39 +1,6 @@
-"""Expected exceptions at bounded SymPy fallback boundaries."""
+"""Compatibility alias; shares implementation and caches with exprtools._errors."""
 
-from sympy.core.sympify import SympifyError
-from sympy.polys.polyerrors import (
-    CoercionFailed,
-    DomainError,
-    ExactQuotientFailed,
-    GeneratorsNeeded,
-    NotAlgebraic,
-    PolynomialError,
-)
+import importlib as _importlib
+import sys as _sys
 
-EXACT_METHOD_ERRORS = (
-    ArithmeticError,
-    TypeError,
-    ValueError,
-    NotImplementedError,
-    CoercionFailed,
-    DomainError,
-    GeneratorsNeeded,
-    NotAlgebraic,
-    PolynomialError,
-)
-
-RECOVERABLE_SYMPY_ERRORS = (
-    TypeError,
-    ValueError,
-    AttributeError,
-    NotImplementedError,
-    SympifyError,
-)
-
-RECOVERABLE_POLY_ERRORS = RECOVERABLE_SYMPY_ERRORS + (
-    PolynomialError,
-    CoercionFailed,
-    DomainError,
-    ExactQuotientFailed,
-    GeneratorsNeeded,
-)
+_sys.modules[__name__] = _importlib.import_module("exprtools._errors")

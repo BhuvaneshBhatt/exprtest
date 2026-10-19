@@ -1,3 +1,8 @@
+> Expression predicates now live in the **exprtools** distribution, in `exprtools/`.
+> This repository also builds the **exprtest 0.2** compatibility distribution.
+> Install both locally with `pip install -e ./exprtools -e .`.
+> Existing imports remain supported. See [migration and APIs](exprtools/README.md).
+
 # exprtest
 
 `exprtest` provides fast predicates for mathematical expressions (including exact numeric ones). Its currently primary API, `zerotest()`, returns `True` only for a proved zero. By default it returns `False` for either a proved nonzero value or strong one-sided evidence of nonzeroness, and `None` when neither conclusion is available. Use `confidence="certified"` when `False` must mean proved nonzero.

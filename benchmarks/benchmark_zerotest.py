@@ -7,8 +7,8 @@ import time
 
 import sympy as sp
 
-from exprtest import zerotest
-from exprtest._cache import cache_clear
+from exprtools import zerotest
+from exprtools._cache import cache_clear
 
 
 def cases(count: int = 5000):
