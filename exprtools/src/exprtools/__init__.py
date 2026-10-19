@@ -65,3 +65,7 @@ __all__ += [
     "TransformationRegistry",
     "DEFAULT_REGISTRY",
 ]
+
+from .algebraic import StructuralSeparationBound, structural_separation_bound
+
+__all__ += ["StructuralSeparationBound", "structural_separation_bound"]

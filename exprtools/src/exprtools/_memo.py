@@ -52,6 +52,7 @@ def clear_exact_cache() -> None:
     from ._cyclotomic import _form_cached
     from ._fast import _quick_cached
     from ._special import _special_cached
+    from ._structural_gap import clear_structural_cache
 
     _minpoly_expr.cache_clear()
     _cyclo_expr.cache_clear()
@@ -61,3 +62,4 @@ def clear_exact_cache() -> None:
     _special_cached.cache_clear()
     clear_model_cache()
     clear_bound_cache()
+    clear_structural_cache()

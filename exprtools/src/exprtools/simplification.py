@@ -5,7 +5,9 @@ from typing import Callable
 
 import sympy as sp
 
+from ._result import Verdict
 from ._simplification_models import SimplificationBudget, SimplificationResult, _Run
+from ._structural_gap import structural_algebraic_test
 from .context import is_defined, resolve_context
 from .core import zerotest
 from .evidence import TransformationEvidence
@@ -93,10 +95,21 @@ def _rational(expr, context, budget):
     return expr
 
 
+def _algebraic(expr, context, budget):
+    if expr.free_symbols or not expr.has(sp.Pow):
+        return expr
+    return (
+        sp.S.Zero
+        if structural_algebraic_test(expr).verdict is Verdict.ZERO_PROVEN
+        else expr
+    )
+
+
 DEFAULT_REGISTRY = TransformationRegistry(
     (
         Transformation("refine", _refinement),
         Transformation("recurrences", _recurrence),
+        Transformation("algebraic", _algebraic),
         Transformation("rational", _rational),
     )
 )
@@ -171,9 +184,12 @@ def simplify(
                 break
             proposal = transformation.apply(current, context, run.remaining())
             trusted = any(
-                transformation.apply is f for f in (_refinement, _recurrence, _rational)
+                transformation.apply is f
+                for f in (_refinement, _recurrence, _algebraic, _rational)
             )
-            if trusted and transformation.apply is not _rational:
+            if trusted and any(
+                transformation.apply is f for f in (_refinement, _recurrence)
+            ):
                 candidate = proposal.expression
                 evidence = proposal.evidence
                 steps = max(1, proposal.steps)

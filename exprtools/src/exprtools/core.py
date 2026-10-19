@@ -40,6 +40,7 @@ from ._pslq import pslq_zero_relation
 from ._result import Verdict, ZeroClassification
 from ._rewrite import exact_rewrite
 from ._sqrt_sum import square_root_sum_test
+from ._structural_gap import structural_algebraic_test
 from ._timing import run_with_time_budget
 from ._transcendental import transcendental_zero_test
 
@@ -239,6 +240,17 @@ def _fast_exact(term: sp.Expr, assumptions,
         sqrt_sum = _stage_run(profiler, "sqrt-sum", lambda: square_root_sum_test(term), _verdict_name)
     if sqrt_sum.verdict is not Verdict.UNKNOWN:
         return sqrt_sum
+
+    if features.has_radical:
+        structural = _stage_run(
+            profiler, "algebraic-structural",
+            lambda: run_with_time_budget(structural_algebraic_test, term,
+                                         seconds=cfg.TOWER_SIGN_TIMEOUT,
+                                         default=_fast_unknown("structural separation timed out")),
+            _verdict_name,
+        )
+        if structural.proven:
+            return structural
 
     # The tower stage is cheaper than primitive-element construction for small
     # nested radicals. It is admitted only under a stricter fast-path budget.

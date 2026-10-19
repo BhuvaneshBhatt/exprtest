@@ -27,6 +27,7 @@ from ._algebraic_tower import (
 )
 from ._cost import within_budget
 from ._result import Verdict, ZeroClassification
+from ._structural_gap import structural_algebraic_test
 
 __all__ = [
     "AlgebraicExpressionInfo",
@@ -57,6 +58,10 @@ def exact_algebraic_number_test(expr: sp.Expr) -> ZeroClassification:
         )
 
     expr = sp.sympify(expr)
+    if expr.has(sp.Pow):
+        structural = structural_algebraic_test(expr)
+        if structural.proven:
+            return structural
     info = classify_algebraic_expression(expr)
     if not info.is_algebraic:
         return ZeroClassification(Verdict.UNKNOWN, "algebraic", detail=info.detail)

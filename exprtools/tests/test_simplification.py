@@ -90,6 +90,7 @@ def test_registry_isolation_certification_and_complexity():
     assert [t.name for t in DEFAULT_REGISTRY.transformations] == [
         "refine",
         "recurrences",
+        "algebraic",
         "rational",
     ]
 
