@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "exprtest"
-version = "0.1.0"
+version = "0.2.0"
 description = "Fast symbolic expression predicates with exact, numeric, and heuristic methods."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -24,8 +24,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Mathematics",
 ]
 dependencies = [
-    "sympy>=1.12",
-    "mpmath>=1.3",
+    "exprtools>=0.1.0",
 ]
 
 [project.optional-dependencies]
