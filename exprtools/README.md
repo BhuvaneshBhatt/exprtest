@@ -143,3 +143,14 @@ build the compatibility package at the repository root. Release exprtools before
 exprtest 0.2 and asymptotic 0.2.2, which depend on its availability. The existing
 exprtest publication workflow still targets the compatibility distribution;
 configure a separate trusted publisher for exprtools before releasing it.
+
+## Structural algebraic certification
+
+Closed nested-radical identities can use an integer structural separation bound
+and rigorous Acb enclosure, without constructing a minimal polynomial. This path
+is used by certified zero testing and the `algebraic` simplification stage.
+`structural_separation_bound(expr)` exposes a **conditional** nonzero magnitude
+bound; a positive bound alone never proves that an expression is nonzero.
+Unsupported syntax or unavailable python-flint falls back conservatively.
+The stage-5 algorithm report in the repository documents its proof, limits,
+regressions, rejected prototype, and measured comparisons.

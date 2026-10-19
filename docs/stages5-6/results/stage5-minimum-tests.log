@@ -1,0 +1,10 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.10.14, pytest-7.0.0, pluggy-1.7.0
+rootdir: /Users/bbhatt/Documents/Codex/2026-10-18/referenced-chatgpt-conversation-this-is-an/work/exprtest/exprtools, configfile: pyproject.toml
+collected 31 items
+
+work/exprtest/exprtools/tests/test_structural_gap.py ..............ssss. [ 61%]
+ss                                                                       [ 67%]
+work/exprtest/exprtools/tests/test_simplification.py ..........          [100%]
+
+======================== 25 passed, 6 skipped in 1.75s =========================
