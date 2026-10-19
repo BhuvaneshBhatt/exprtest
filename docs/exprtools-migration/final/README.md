@@ -43,11 +43,11 @@ python-flint 0.9.0, pytest 9.1.1, macOS arm64.
 | Final recurrence/context/instrumentation integration selection | **53 passed** |
 | New framework checks included in final suite | **49 passed** |
 
-Final full exprtest/exprtools coverage: 4689/5757
-statements (81.45%),
-1986/2800 branches
-(70.93%), combined
-78.01%. This scope now includes the extracted
+Final full exprtest/exprtools coverage: 4691/5764
+statements (81.38%),
+1987/2804 branches
+(70.86%), combined
+77.94%. This scope now includes the extracted
 recurrence engine and new framework, so it is not directly comparable to the
 predicate-only baseline. The separate recurrence/adapter integration run has
 84.14% combined coverage. Original predicate algorithms
@@ -113,3 +113,20 @@ asymptotic CI installs the extracted package from a pinned implementation commit
 until its first release. No package publication or merging is performed here.
 Raw coverage, JUnit results, benchmarks and compatibility audit accompany this
 report. Wheels and source distributions are supplied as downloadable artifacts.
+
+## Additional repository contract audit
+
+A supplementary selection of release/workflow, metadata, import-boundary,
+suite-layout and repository-coherence checks was compared with untouched
+asymptotic source: baseline **9 failed, 18 passed**; final **8 failed, 20 passed**
+(the final run also includes the new adapter test). All eight remaining failing
+identities are pre-existing. Synchronizing the 0.2.2 runtime/project version and
+its version test resolves one baseline failure. No new failures were introduced.
+These legacy checks mean the repository's full CI is not claimed green.
+`asymptotic-contract-audit.json` identifies the failures. Asymptotic CI pins the
+new exprtools implementation while its distribution awaits initial publication.
+
+The new germ policy also refuses generic/rational cancellation through unresolved
+fixed parameter poles; only the recurrence provider may use its guarded germ
+proofs. Affine implication checks reject compact nonlinear structures before
+constructing polynomials, preserving the coefficient expansion safeguards.

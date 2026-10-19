@@ -189,9 +189,11 @@ def simplify(
                 continue
             if measure(candidate) > measure(current):
                 continue
-            if (
-                transformation.apply is not _refinement
-                and context.domain == "pointwise"
+            if transformation.apply is not _refinement and (
+                context.domain == "pointwise"
+                or (
+                    context.domain == "germ" and transformation.apply is not _recurrence
+                )
             ):
                 if not is_defined(current, context) or not is_defined(
                     candidate, context

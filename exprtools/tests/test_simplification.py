@@ -49,6 +49,13 @@ def test_recurrences_poles_and_limit_context():
     e = s.besselj(v, t) + s.besselj(v + 2, t) - 2 * (v + 1) * s.besselj(v + 1, t) / t
     ctx = MathematicalContext(domain="germ", variables=t, target=0)
     assert simplify(e, context=ctx, budget=B) == 0
+    a = s.Symbol("a")
+    fixed_hole = s.Mul(a, s.Pow(a, -1, evaluate=False), evaluate=False)
+    assert simplify(fixed_hole, context=ctx, budget=B) == fixed_hole
+    registry = TransformationRegistry().register(
+        "cancel_fixed", lambda e, c, b: s.S.One
+    )
+    assert simplify(fixed_hole, context=ctx, registry=registry, budget=B) == fixed_hole
 
 
 def test_registry_isolation_certification_and_complexity():

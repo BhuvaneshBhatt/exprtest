@@ -52,16 +52,26 @@ def _linear_formula(assumptions):
     formula = sp.And(*clauses)
     if sp.count_ops(formula) > 64:
         return None
+
+    def affine(expr):
+        if expr.is_Rational or expr.is_Symbol:
+            return True
+        if expr.is_Add:
+            return all(affine(arg) for arg in expr.args)
+        if expr.is_Mul:
+            varying = [arg for arg in expr.args if arg.free_symbols]
+            constants = [arg for arg in expr.args if not arg.free_symbols]
+            return (
+                len(varying) == 1
+                and affine(varying[0])
+                and all(arg.is_Rational for arg in constants)
+            )
+        return False
+
+    # Inspect structure before any polynomial constructor: a compact power or
+    # product of binomials must not expand just to test whether it is linear.
     for relation in formula.atoms(sp.core.relational.Relational):
-        difference = relation.lhs - relation.rhs
-        symbols = tuple(difference.free_symbols)
-        if not symbols:
-            continue
-        try:
-            poly = sp.Poly(difference, *symbols)
-            if poly.total_degree() > 1 or not all(c.is_Rational for c in poly.coeffs()):
-                return None
-        except sp.PolynomialError:
+        if not affine(relation.lhs - relation.rhs):
             return None
     return formula
 

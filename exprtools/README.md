@@ -82,7 +82,9 @@ can supply `measure`, an immutable registry, and an explicit mathematical contex
   to removed poles. Use `return_result=True` when retaining this obligation.
 - `domain="germ"` supplies one intrinsically real symbol and an extended real
   target to the recurrence engine's existing punctured-neighborhood guards.
-  It retains the original expression and its domain obligations.
+  It retains the original expression and its domain obligations. Other stages
+  still need pointwise definedness proofs; a zero identity alone does not
+  certify a nonempty germ.
 
 Symbols represent finite complex scalar variables unless assumptions restrict
 them. The framework is deliberately conservative about unsupported function
