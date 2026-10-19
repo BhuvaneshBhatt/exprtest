@@ -10,28 +10,15 @@ from dataclasses import dataclass
 
 import sympy as sp
 
-from ._recurrence_families import (
-    EXTRA_HEADS,
-    KELVIN,
-    POLYNOMIALS,
-    TWO_BASIS,
-    HypergeometricU,
-    LegendreQ,
-    RegularizedHypergeometric2F1,
-    WhittakerM,
-    WhittakerW,
-    function_at,
-    next_basis,
-)
-from ._recurrence_families import signatures as extra_signatures
-from asymptotic.limit_models import LimitEvidence
+from ._recurrence_families import DEFAULT_FAMILIES, RecurrenceFamilies
+from .evidence import TransformationEvidence
 
 
 @dataclass(frozen=True)
 class RecurrenceSimplificationResult:
     original: sp.Expr
     expression: sp.Expr
-    evidence: tuple[LimitEvidence, ...] = ()
+    evidence: tuple[TransformationEvidence, ...] = ()
     steps: int = 0
     stopped: str | None = None
 
@@ -50,7 +37,6 @@ _HEADS = (
     sp.jn,
     sp.yn,
     sp.zeta,
-    *EXTRA_HEADS,
 )
 
 
@@ -66,6 +52,8 @@ def simplify_recurrences(
     budget_seconds=0.05,
     require_defined_germ=False,
     return_result=False,
+    families=None,
+    record_event=None,
 ):
     """Reduce nearby integer-shifted functions to a common recurrence basis.
 
@@ -78,9 +66,23 @@ def simplify_recurrences(
     Accepted rewrites are identities on the original common function domain;
     no value is assigned at removed poles. ``return_result`` exposes evidence.
     """
-    from asymptotic.instrumentation import record_symbolic_event
-
-    record_symbolic_event("recurrence_calls")
+    if record_event is not None:
+        record_event("recurrence_calls")
+    if families is None:
+        families = DEFAULT_FAMILIES
+    EXTRA_HEADS = families.EXTRA_HEADS
+    POLYNOMIALS = families.POLYNOMIALS
+    KELVIN = families.KELVIN
+    TWO_BASIS = families.TWO_BASIS
+    HypergeometricU = families.HypergeometricU
+    LegendreQ = families.LegendreQ
+    RegularizedHypergeometric2F1 = families.RegularizedHypergeometric2F1
+    WhittakerM = families.WhittakerM
+    WhittakerW = families.WhittakerW
+    function_at = families.function_at
+    next_basis = families.next_basis
+    extra_signatures = families.signatures
+    heads = (*_HEADS, *EXTRA_HEADS)
     original = sp.sympify(expr)
     current = original
     if max_shift < 0 or max_steps < 0 or max_ops < 0 or budget_seconds < 0:
@@ -105,7 +107,7 @@ def simplify_recurrences(
         )
         return result if return_result else current
 
-    if not isinstance(original, sp.Expr) or not original.has(*_HEADS):
+    if not isinstance(original, sp.Expr) or not original.has(*heads):
         return finish()
     if sp.count_ops(original) > max_ops:
         stopped = "input operation cap"
@@ -242,7 +244,7 @@ def simplify_recurrences(
         delta = cp - cq
         return int(delta) if rp == rq and delta.is_Integer else None
 
-    for head in _HEADS:
+    for head in heads:
         # Recurrence collection targets additive/rational fixed-order forms.
         # Preserve compact powered gamma products for the Stirling dispatcher.
         if any(
@@ -496,7 +498,7 @@ def simplify_recurrences(
             current = candidate
             steps += span
             evidence.append(
-                LimitEvidence(
+                TransformationEvidence(
                     "integer_shift_recurrence_" + head.__name__,
                     "Exact same-argument integer-shift recurrence; common original function domain, no pole filling; guards: "
                     + str(tuple(dict.fromkeys(conditions))),
